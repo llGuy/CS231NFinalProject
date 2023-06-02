@@ -246,6 +246,10 @@ static const NSUInteger MaxBuffersInFlight = MAX_FRAMES_IN_FLIGHT;
                                        atIndex:bufferIndex];
             }
         }
+        
+        id<MTLTexture> newImg = [mCamera dequeueTexture];
+        if (newImg != nil)
+            _colorMap = newImg;
 
         [renderEncoder setFragmentTexture:_colorMap
                                   atIndex:TextureIndexColor];

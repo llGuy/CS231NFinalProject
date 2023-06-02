@@ -36,7 +36,7 @@
     /* Make the camera session and get device (back camera). */
     @try
     {
-        NSError * error;
+        NSError *error;
         
         mCaptureSession = [[AVCaptureSession alloc] init];
         [mCaptureSession setSessionPreset:AVCaptureSessionPreset640x480];
@@ -53,7 +53,7 @@
         
         mDispatchQueue = dispatch_queue_create("CameraSessionQueue", DISPATCH_QUEUE_SERIAL);
         
-        AVCaptureVideoDataOutput * dataOutput = [[AVCaptureVideoDataOutput alloc] init];
+        AVCaptureVideoDataOutput *dataOutput = [[AVCaptureVideoDataOutput alloc] init];
         [dataOutput setAlwaysDiscardsLateVideoFrames:YES];
         [dataOutput setVideoSettings:@{(id)kCVPixelBufferPixelFormatTypeKey: @(kCVPixelFormatType_32BGRA)}];
         [dataOutput setSampleBufferDelegate:self queue:mDispatchQueue];

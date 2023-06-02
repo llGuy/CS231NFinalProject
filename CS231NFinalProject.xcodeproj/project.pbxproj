@@ -38,6 +38,7 @@
 		0BB602372A2A5EC600A5A492 /* NSMutableArray+QueueAdditions.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "NSMutableArray+QueueAdditions.h"; sourceTree = "<group>"; };
 		0BB602382A2A5F2300A5A492 /* NSMutableArray+QueueAdditions.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "NSMutableArray+QueueAdditions.m"; sourceTree = "<group>"; };
 		0BB6023B2A2A60B200A5A492 /* Def.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Def.h; sourceTree = "<group>"; };
+		0BB6023C2A2A9A1D00A5A492 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -70,6 +71,7 @@
 		0BB602182A291FE800A5A492 /* CS231NFinalProject */ = {
 			isa = PBXGroup;
 			children = (
+				0BB6023C2A2A9A1D00A5A492 /* Info.plist */,
 				0BB602192A291FE800A5A492 /* AppDelegate.h */,
 				0BB6021A2A291FE800A5A492 /* AppDelegate.m */,
 				0BB6021C2A291FE800A5A492 /* Renderer.h */,
@@ -312,6 +314,8 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = MB79LP3G7N;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = CS231NFinalProject/Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "$(PRODUCT_NAME) camera use";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
@@ -340,6 +344,8 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = MB79LP3G7N;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = CS231NFinalProject/Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "$(PRODUCT_NAME) camera use";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
