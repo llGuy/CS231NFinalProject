@@ -17,6 +17,12 @@
 
 #include "Time.h"
 
+struct FrameData
+{
+    id<MTLTexture> cameraOutput;
+    id<MTLTexture> croppedCameraOutput;
+}
+
 @implementation Renderer
 {
     // Waits for a free camera slot, initialized to MAX_FRAMES_IN_FLIGHT
@@ -31,11 +37,14 @@
     // We submit processing commands to this queue.
     id <MTLCommandQueue> mCommandQueue;
 
-    // Compute pipeline.
+    //
     id <MTLRenderPipelineState> mRenderOutputPipeline;
     
+    //
+    id <MTLComputePipelineState> mCropPipeline;
+    
     // Camera outputs.
-    id <MTLTexture> mCameraOutputs[MAX_FRAMES_IN_FLIGHT];
+    struct FrameData mFrames[MAX_FRAMES_IN_FLIGHT];
     
     // Encapsulates camera capture.
     Camera *mCamera;
@@ -72,7 +81,23 @@
 {
     // Configures color format for the view.
     view.colorPixelFormat = MTLPixelFormatBGRA8Unorm_sRGB;
+    
+    mViewportSize.x = view.drawableSize.width;
+    mViewportSize.y = view.drawableSize.height;
+    
+    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
+    {
+        MTLTextureDescriptor *textureDescriptor = [[MTLTextureDescriptor alloc] init];
+        textureDescriptor.textureType = MTLTextureType2D;
+        textureDescriptor.pixelFormat = MTLPixelFormatBGRA8Unorm;
+        textureDescriptor.width = mViewportSize.y;
+        textureDescriptor.height = mViewportSize.x;
+        textureDescriptor.usage = MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite;
 
+        mFrames[i].croppedCameraOutput = [mDevice newTextureWithDescriptor:textureDescriptor];
+    }
+
+    
     // Boilerplate.
     id<MTLLibrary> defaultLibrary = [mDevice newDefaultLibrary];
     
@@ -89,7 +114,12 @@
     pipelineStateDescriptor.colorAttachments[0].pixelFormat = view.colorPixelFormat;
     
     mRenderOutputPipeline = [mDevice newRenderPipelineStateWithDescriptor:pipelineStateDescriptor
-                                                                   error:&error];
+                                                                    error:&error];
+    
+    // !!
+    id<MTLFunction> cropFunction = [defaultLibrary newFunctionWithName:@"cropKernel"];
+    mCropPipeline = [mDevice newComputePipelineStateWithFunction:cropFunction error: &error];
+    
     
     // Initialize the command queue.
     mCommandQueue = [mDevice newCommandQueue];
@@ -110,7 +140,7 @@
 
         [renderEncoder setRenderPipelineState:mRenderOutputPipeline];
 
-        [renderEncoder setFragmentTexture:mCameraOutputs[mCurrentFrame]
+        [renderEncoder setFragmentTexture:mFrames[mCurrentFrame].cameraOutput
                                   atIndex:0];
 
         // Draw the quad.
@@ -125,7 +155,7 @@
 /// Per frame updates here
 - (void)drawInMTKView:(nonnull MTKView *)view
 {
-    // Wait for a free slot in mCameraOutputs.
+    // Wait for a free slot in mFrames.
     dispatch_semaphore_wait(mInFlightSemaphore, DISPATCH_TIME_FOREVER);
     
     // ...
@@ -142,7 +172,23 @@
     // Dequeue image from camera.
     id<MTLTexture> newImg = [mCamera dequeueTexture];
     if (newImg != nil)
-        mCameraOutputs[mCurrentFrame] = newImg;
+    {
+        mFrames[mCurrentFrame].cameraOutput = newImg;
+        
+        struct {
+            vector_uint2 croppedSourceOffset;
+            vector_uint2 croppedSourceExtent;
+        } cropInfo;
+        
+        // populate cropInfo...
+        
+        id<MTLComputeCommandEncoder> cropEncoder = [commandBuffer computeCommandEncoder];
+        [cropEncoder setComputePipelineState:mCropPipeline];
+        [cropEncoder setTexture:mFrames[mCurrentFrame].cameraOutput atIndex:0];
+        [cropEncoder setTexture:mFrames[mCurrentFrame].croppedCameraOutput atIndex:1];
+        [cropEncoder setBytes:&cropInfo length:sizeof(cropInfo) atIndex:2];
+        [cropEncoder dispatchThreadgroups:<#(MTLSize)#> threadsPerThreadgroup:<#(MTLSize)#>]
+    }
     
     [self renderFinalOutput:view commandBuffer:commandBuffer];
 
@@ -159,6 +205,8 @@
 {
     mViewportSize.x = size.width;
     mViewportSize.y = size.height;
+    
+    printf("%d %d\n", mViewportSize.x, mViewportSize.y);
 }
 
 @end

@@ -56,15 +56,31 @@ renderVertex(uint                   vertexID             [[ vertex_id ]])
 }
 
 fragment float4 renderFragment(RasterizerData  in           [[stage_in]],
-                               texture2d<half> colorTexture [[ texture(0) ]])
+                               texture2d<half> colorTexture [[texture(0)]])
 {
     constexpr sampler textureSampler (mag_filter::linear,
                                       min_filter::linear);
-
+    
+    // Calculate adjusted texture coordinates based on the viewport
+    // float2 adjustedTexCoord = (in.textureCoordinate * viewportSize) + viewportOrigin;
+    
     // Sample the texture and return the color to colorSample
-    half4 colorSample = colorTexture.sample (textureSampler, in.textureCoordinate);
+    half4 colorSample = colorTexture.sample(textureSampler, in.textureCoordinate);
     
     colorSample = (half4)pow(colorSample, half4(2.2));
     
     return float4(colorSample);
+}
+
+struct CropInfo {
+    uint2 croppedSourceOffset;
+    uint2 croppedSourceExtent;
+};
+
+kernel void cropKernel(texture2d<float, access::read>   inTexture   [[texture(0)]],
+                       texture2d<float, access::write>  outTexture  [[texture(1)]],
+                       device CropInfo &cropInfo                    [[buffer(2)]],
+                       uint2                            gid         [[thread_position_in_grid]])
+{
+    return;
 }
