@@ -46,7 +46,7 @@
     vector_uint2 mViewportSize;
 }
 
--(nonnull instancetype)initWithMetalKitView:(nonnull MTKView *)view;
+- (nonnull instancetype)initWithMetalKitView:(nonnull MTKView *)view;
 {
     self = [super init];
     if (self)
@@ -95,45 +95,14 @@
     mCommandQueue = [mDevice newCommandQueue];
 }
 
-/// Per frame updates here
-- (void)drawInMTKView:(nonnull MTKView *)view
+- (void)renderFinalOutput:(nonnull MTKView *)view commandBuffer:(id<MTLCommandBuffer>)cmdbuf
 {
-    // Wait for a free slot in mCameraOutputs.
-    dispatch_semaphore_wait(mInFlightSemaphore, DISPATCH_TIME_FOREVER);
-    
-    // ...
-    id<MTLCommandBuffer> commandBuffer = [mCommandQueue commandBuffer];
-    commandBuffer.label = @"FrameCommandBuffer";
-    
-    // Tell metal to call a certain function when the command buffer
-    // finishes.
-    __block dispatch_semaphore_t blockSema = mInFlightSemaphore;
-    [commandBuffer addCompletedHandler:^(id<MTLCommandBuffer> buffer)
-     {
-         dispatch_semaphore_signal(blockSema);
-     }];
-    
-    // Dequeue image from camera.
-    id<MTLTexture> newImg = [mCamera dequeueTexture];
-    if (newImg != nil)
-    {
-        mCameraOutputs[mCurrentFrame] = newImg;
-        
-#if 0
-        getCurrentTime(mCurrentTimeStamp);
-        float diff = getTimeDifference(mCurrentTimeStamp, mPrevTimeStamp);
-        getCurrentTime(mPrevTimeStamp);
-        
-        printf("%f\n", 1.0f / diff);
-#endif
-    }
-    
     MTLRenderPassDescriptor *renderPassDescriptor = view.currentRenderPassDescriptor;
     if (renderPassDescriptor != nil)
     {
         // Create the encoder for the render pass.
         id<MTLRenderCommandEncoder> renderEncoder =
-        [commandBuffer renderCommandEncoderWithDescriptor:renderPassDescriptor];
+        [cmdbuf renderCommandEncoderWithDescriptor:renderPassDescriptor];
         renderEncoder.label = @"MyRenderEncoder";
 
         // Set the region of the drawable to draw into.
@@ -150,9 +119,33 @@
                           vertexCount:6];
 
         [renderEncoder endEncoding];
-
     }
+}
+
+/// Per frame updates here
+- (void)drawInMTKView:(nonnull MTKView *)view
+{
+    // Wait for a free slot in mCameraOutputs.
+    dispatch_semaphore_wait(mInFlightSemaphore, DISPATCH_TIME_FOREVER);
     
+    // ...
+    id<MTLCommandBuffer> commandBuffer = [mCommandQueue commandBuffer];
+    commandBuffer.label = @"FrameCommandBuffer";
+    
+    // Tell metal to call a certain function when the command buffer finishes.
+    __block dispatch_semaphore_t blockSema = mInFlightSemaphore;
+    [commandBuffer addCompletedHandler:^(id<MTLCommandBuffer> buffer)
+     {
+         dispatch_semaphore_signal(blockSema);
+     }];
+    
+    // Dequeue image from camera.
+    id<MTLTexture> newImg = [mCamera dequeueTexture];
+    if (newImg != nil)
+        mCameraOutputs[mCurrentFrame] = newImg;
+    
+    [self renderFinalOutput:view commandBuffer:commandBuffer];
+
     [commandBuffer presentDrawable:view.currentDrawable];
 
     [commandBuffer commit];
@@ -166,7 +159,6 @@
 {
     mViewportSize.x = size.width;
     mViewportSize.y = size.height;
-
 }
 
 @end

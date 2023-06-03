@@ -23,7 +23,7 @@
     dispatch_queue_t mDispatchQueue;
 }
 
--(nonnull instancetype)initWithDevice:(id<MTLDevice>)device;
+- (nonnull instancetype)initWithDevice:(id<MTLDevice>)device;
 {
     self = [super init];
     
@@ -116,7 +116,7 @@
     return self;
 }
 
--(void)captureOutput:(AVCaptureOutput *)captureOutput didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer fromConnection:(AVCaptureConnection *)connection;
+- (void)captureOutput:(AVCaptureOutput *)captureOutput didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer fromConnection:(AVCaptureConnection *)connection;
 {
     /* Make sure that we don't overload the texture queue in case the renderer cannot catch up. */
     [mQueueLock lock];
@@ -149,7 +149,7 @@
     }
 }
 
--(id<MTLTexture>)dequeueTexture;
+- (id<MTLTexture>)dequeueTexture;
 {
     id<MTLTexture> ret = nil;
     
