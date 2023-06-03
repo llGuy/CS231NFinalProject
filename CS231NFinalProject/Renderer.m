@@ -38,6 +38,8 @@ static const NSUInteger MaxBuffersInFlight = MAX_FRAMES_IN_FLIGHT;
     float _rotation;
 
     MTKMesh *_mesh;
+    
+    float mCurrentTime;
 }
 
 -(nonnull instancetype)initWithMetalKitView:(nonnull MTKView *)view;
@@ -51,6 +53,8 @@ static const NSUInteger MaxBuffersInFlight = MAX_FRAMES_IN_FLIGHT;
         [self _loadAssets];
         
         mCamera = [[Camera alloc] initWithDevice:_device];
+        
+        mCurrentTime = ([[NSDate date] timeIntervalSince1970] * 1000);
     }
 
     return self;
@@ -249,7 +253,9 @@ static const NSUInteger MaxBuffersInFlight = MAX_FRAMES_IN_FLIGHT;
         
         id<MTLTexture> newImg = [mCamera dequeueTexture];
         if (newImg != nil)
+        {
             _colorMap = newImg;
+        }
 
         [renderEncoder setFragmentTexture:_colorMap
                                   atIndex:TextureIndexColor];

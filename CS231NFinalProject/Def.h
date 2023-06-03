@@ -9,5 +9,6 @@
 #define Def_h
 
 #define MAX_FRAMES_IN_FLIGHT 3
+#define CAMERA_DESIRED_FRAMERATE 60
 
 #endif /* Def_h */

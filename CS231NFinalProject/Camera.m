@@ -48,6 +48,27 @@
             return self;
         }
         
+        for(AVCaptureDeviceFormat *format in [mVideoDevice formats])
+        {
+            CMFormatDescriptionRef description = format.formatDescription;
+            float maxFrameRate = ((AVFrameRateRange*)[format.videoSupportedFrameRateRanges objectAtIndex:0]).maxFrameRate;
+            
+            if(maxFrameRate > 60 && CMFormatDescriptionGetMediaSubType(description) == kCVPixelFormatType_420YpCbCr8BiPlanarFullRange)
+            {
+                if ([mVideoDevice lockForConfiguration:NULL] == YES)
+                {
+                    mVideoDevice.activeFormat = format;
+                    [mVideoDevice setActiveVideoMinFrameDuration:CMTimeMake(10,600)];
+                    [mVideoDevice setActiveVideoMaxFrameDuration:CMTimeMake(10,600)];
+                    [mVideoDevice unlockForConfiguration];
+                    NSLog(@"Max Frame Rate: %f", maxFrameRate);
+                    break;
+                    // NSLog(@"formats  %@ %@ %@", format.mediaType, format.formatDescription, format.videoSupportedFrameRateRanges);
+                }
+            }
+        }
+
+        
         AVCaptureDeviceInput *input = [AVCaptureDeviceInput deviceInputWithDevice:mVideoDevice error:&error];
         [mCaptureSession addInput:input];
         
@@ -102,7 +123,7 @@
         [mTextures enqueue:newTexture];
         [mQueueLock unlock];
         
-        NSLog(@"Got picture from camera!");
+        // NSLog(@"Got picture from camera!");
         
         CFRelease(texture);
     }
