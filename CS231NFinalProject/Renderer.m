@@ -183,18 +183,20 @@ struct FrameData
         id<MTLTexture> inputTexture = mFrames[mCurrentFrame].cameraOutput;
         id<MTLTexture> outputTexture = mFrames[mCurrentFrame].croppedCameraOutput;
         
-        float aspectRatio = (float)inputTexture.width / (float)inputTexture.height;
+        float aspectRatio = (float)outputTexture.height / (float)outputTexture.width;
         cropInfo.croppedSourceExtent.x = (int)inputTexture.width;
         cropInfo.croppedSourceExtent.y = (int)((float)inputTexture.width * aspectRatio);
         
+        int inputTextureHeight = (int)inputTexture.height;
+        
         cropInfo.croppedSourceOffset.x = 0;
-        cropInfo.croppedSourceOffset.y = (int)(inputTexture.height - cropInfo.croppedSourceExtent.y) / 2;
+        cropInfo.croppedSourceOffset.y = (int)(inputTextureHeight - cropInfo.croppedSourceExtent.y) / 2;
         
         MTLSize threadGroupSize = MTLSizeMake(16, 16, 1);
         
         MTLSize numThreadGroups;
-        numThreadGroups.width  = (inputTexture.width  + threadGroupSize.width -  1) / threadGroupSize.width;
-        numThreadGroups.height = (inputTexture.height + threadGroupSize.height - 1) / threadGroupSize.height;
+        numThreadGroups.width  = (outputTexture.width  + threadGroupSize.width -  1) / threadGroupSize.width;
+        numThreadGroups.height = (outputTexture.height + threadGroupSize.height - 1) / threadGroupSize.height;
         numThreadGroups.depth = 1;
         
         id<MTLComputeCommandEncoder> cropEncoder = [commandBuffer computeCommandEncoder];
@@ -223,6 +225,18 @@ struct FrameData
     mViewportSize.y = size.height;
     
     printf("%d %d\n", mViewportSize.x, mViewportSize.y);
+    
+    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
+    {
+        MTLTextureDescriptor *textureDescriptor = [[MTLTextureDescriptor alloc] init];
+        textureDescriptor.textureType = MTLTextureType2D;
+        textureDescriptor.pixelFormat = MTLPixelFormatBGRA8Unorm;
+        textureDescriptor.width = mViewportSize.y;
+        textureDescriptor.height = mViewportSize.x;
+        textureDescriptor.usage = MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite;
+
+        mFrames[i].croppedCameraOutput = [mDevice newTextureWithDescriptor:textureDescriptor];
+    }
 }
 
 @end
