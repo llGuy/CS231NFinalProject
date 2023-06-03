@@ -111,8 +111,11 @@
     {
     }
     
-    [mCaptureSession startRunning];
-    
+    dispatch_queue_t backgroundQueue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
+    dispatch_async(backgroundQueue, ^{
+        [self->mCaptureSession startRunning];
+    });
+
     return self;
 }
 

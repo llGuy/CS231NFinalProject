@@ -48,9 +48,8 @@ renderVertex(uint                   vertexID             [[ vertex_id ]])
     out.clipSpacePosition.z = 0.0;
     out.clipSpacePosition.w = 1.0;
 
-    out.textureCoordinate.x = vertexArray[vertexID].y;
-    out.textureCoordinate.y = vertexArray[vertexID].x;
-    out.textureCoordinate.y = 1.0 - out.textureCoordinate.y;
+    out.textureCoordinate.x = vertexArray[vertexID].x;
+    out.textureCoordinate.y = vertexArray[vertexID].y;
 
     return out;
 }
@@ -77,10 +76,10 @@ struct CropInfo {
     uint2 croppedSourceExtent;
 };
 
-kernel void cropKernel(texture2d<float>   inTexture   [[texture(0)]],
-                       texture2d<float, access::write>  outTexture  [[texture(1)]],
-                       constant CropInfo &cropInfo                    [[buffer(2)]],
-                       uint2                            gid         [[thread_position_in_grid]])
+kernel void cropAndRotateKernel(texture2d<float> inTexture [[texture(0)]],
+                                texture2d<float, access::write> outTexture [[texture(1)]],
+                                constant CropInfo &cropInfo [[buffer(2)]],
+                                uint2 gid [[thread_position_in_grid]])
 {
     if ((gid.x >= outTexture.get_width()) || (gid.y >= outTexture.get_height()))
     {
@@ -93,7 +92,8 @@ kernel void cropKernel(texture2d<float>   inTexture   [[texture(0)]],
     float2 croppedSourceOffset = (float2)cropInfo.croppedSourceOffset;
     float2 croppedSourceExtent = (float2)cropInfo.croppedSourceExtent;
     
-    float2 uvInput = (croppedSourceOffset + croppedSourceExtent * uvOutput) / float2(inTexture.get_width(), inTexture.get_height());
+    float2 rotatedUvOutput = float2(uvOutput.y, 1.0-uvOutput.x);
+    float2 uvInput = (croppedSourceOffset + croppedSourceExtent * rotatedUvOutput) / float2(inTexture.get_width(), inTexture.get_height());
     
     constexpr sampler textureSampler (mag_filter::linear,
                                       min_filter::linear);
