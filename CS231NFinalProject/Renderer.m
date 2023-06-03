@@ -244,46 +244,52 @@ struct FrameData
     // Wait for a free slot in mFrames.
     dispatch_semaphore_wait(mInFlightSemaphores[mCurrentFrame], DISPATCH_TIME_FOREVER);
     
-    // ...
-    id<MTLCommandBuffer> commandBuffer = [mCommandQueue commandBuffer];
-    commandBuffer.label = @"FrameCommandBuffer";
-    
-    // Tell metal to call a certain function when the command buffer finishes.
-    __block dispatch_semaphore_t blockSema = mInFlightSemaphores[mCurrentFrame];
-    [commandBuffer addCompletedHandler:^(id<MTLCommandBuffer> buffer)
-     {
-         dispatch_semaphore_signal(blockSema);
-     }];
-    
-#if 1
-    /* Render output from previous submission. */
-    [self encodeFinalRender:view commandBuffer:commandBuffer];
-    
-    // Dequeue image from camera.
-    id<MTLTexture> newImg = [mCamera dequeueTexture];
-    if (newImg != nil)
-    {
-        mFrames[mCurrentFrame].cameraOutput = newImg;
+    { // Make sure stuff gets presented to the screen immediately
+        id<MTLCommandBuffer> commandBuffer = [mCommandQueue commandBuffer];
+        commandBuffer.label = @"FrameCommandBuffer";
         
-        // Perform all image processing operations
-        [self encodeImageProcessing:commandBuffer];
+        /* Render output from previous submission. */
+        [self encodeFinalRender:view commandBuffer:commandBuffer];
+        
+        [commandBuffer presentDrawable:view.currentDrawable];
+        
+        [commandBuffer commit];
     }
-    else
-    {
-        /* Did not get new image from camera */
-        printf("Did not get new image from camera\n");
-    }
-#endif
     
-    // We are guaranteed that compute passes finish one after the other.
-    mCurrentFrame = (mCurrentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
-
-    [commandBuffer presentDrawable:view.currentDrawable];
-
-    [commandBuffer commit];
+    { // Commit a command buffer to start doing the image processing work immediately.
+        id<MTLCommandBuffer> commandBuffer = [mCommandQueue commandBuffer];
+        commandBuffer.label = @"FrameCommandBuffer";
+        
+        // Tell metal to call a certain function when the command buffer finishes.
+        __block dispatch_semaphore_t blockSema = mInFlightSemaphores[mCurrentFrame];
+        [commandBuffer addCompletedHandler:^(id<MTLCommandBuffer> buffer)
+         {
+            dispatch_semaphore_signal(blockSema);
+        }];
+        
+        // Dequeue image from camera.
+        id<MTLTexture> newImg = [mCamera dequeueTexture];
+        if (newImg != nil)
+        {
+            mFrames[mCurrentFrame].cameraOutput = newImg;
+            
+            // Perform all image processing operations
+            [self encodeImageProcessing:commandBuffer];
+            
+            // We are guaranteed that compute passes finish one after the other.
+            mCurrentFrame = (mCurrentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+        }
+        else
+        {
+            /* Did not get new image from camera */
+            printf("Did not get new image from camera\n");
+        }
+        
+        [commandBuffer commit];
+    }
     
     [self calculateFramerate];
-    // [self printFramerate];
+    [self printFramerate];
 }
 
 /// Respond to drawable size or orientation changes here
