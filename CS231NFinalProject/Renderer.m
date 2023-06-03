@@ -21,7 +21,7 @@ struct FrameData
 {
     id<MTLTexture> cameraOutput;
     id<MTLTexture> croppedCameraOutput;
-}
+};
 
 @implementation Renderer
 {
@@ -140,7 +140,7 @@ struct FrameData
 
         [renderEncoder setRenderPipelineState:mRenderOutputPipeline];
 
-        [renderEncoder setFragmentTexture:mFrames[mCurrentFrame].cameraOutput
+        [renderEncoder setFragmentTexture:mFrames[mCurrentFrame].croppedCameraOutput
                                   atIndex:0];
 
         // Draw the quad.
@@ -180,14 +180,30 @@ struct FrameData
             vector_uint2 croppedSourceExtent;
         } cropInfo;
         
-        // populate cropInfo...
+        id<MTLTexture> inputTexture = mFrames[mCurrentFrame].cameraOutput;
+        id<MTLTexture> outputTexture = mFrames[mCurrentFrame].croppedCameraOutput;
+        
+        float aspectRatio = (float)inputTexture.width / (float)inputTexture.height;
+        cropInfo.croppedSourceExtent.x = (int)inputTexture.width;
+        cropInfo.croppedSourceExtent.y = (int)((float)inputTexture.width * aspectRatio);
+        
+        cropInfo.croppedSourceOffset.x = 0;
+        cropInfo.croppedSourceOffset.y = (int)(inputTexture.height - cropInfo.croppedSourceExtent.y) / 2;
+        
+        MTLSize threadGroupSize = MTLSizeMake(16, 16, 1);
+        
+        MTLSize numThreadGroups;
+        numThreadGroups.width  = (inputTexture.width  + threadGroupSize.width -  1) / threadGroupSize.width;
+        numThreadGroups.height = (inputTexture.height + threadGroupSize.height - 1) / threadGroupSize.height;
+        numThreadGroups.depth = 1;
         
         id<MTLComputeCommandEncoder> cropEncoder = [commandBuffer computeCommandEncoder];
         [cropEncoder setComputePipelineState:mCropPipeline];
-        [cropEncoder setTexture:mFrames[mCurrentFrame].cameraOutput atIndex:0];
-        [cropEncoder setTexture:mFrames[mCurrentFrame].croppedCameraOutput atIndex:1];
+        [cropEncoder setTexture:inputTexture atIndex:0];
+        [cropEncoder setTexture:outputTexture atIndex:1];
         [cropEncoder setBytes:&cropInfo length:sizeof(cropInfo) atIndex:2];
-        [cropEncoder dispatchThreadgroups:<#(MTLSize)#> threadsPerThreadgroup:<#(MTLSize)#>]
+        [cropEncoder dispatchThreadgroups:numThreadGroups threadsPerThreadgroup:threadGroupSize];
+        [cropEncoder endEncoding];
     }
     
     [self renderFinalOutput:view commandBuffer:commandBuffer];

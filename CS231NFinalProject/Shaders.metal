@@ -77,10 +77,28 @@ struct CropInfo {
     uint2 croppedSourceExtent;
 };
 
-kernel void cropKernel(texture2d<float, access::read>   inTexture   [[texture(0)]],
+kernel void cropKernel(texture2d<float>   inTexture   [[texture(0)]],
                        texture2d<float, access::write>  outTexture  [[texture(1)]],
-                       device CropInfo &cropInfo                    [[buffer(2)]],
+                       constant CropInfo &cropInfo                    [[buffer(2)]],
                        uint2                            gid         [[thread_position_in_grid]])
 {
-    return;
+    if ((gid.x >= outTexture.get_width()) || (gid.y >= outTexture.get_height()))
+    {
+        // Return early if the pixel is out of bounds
+        return;
+    }
+    
+    float2 uvOutput = (float2)gid / float2(outTexture.get_width(), outTexture.get_height());
+    
+    float2 croppedSourceOffset = (float2)cropInfo.croppedSourceOffset;
+    float2 croppedSourceExtent = (float2)cropInfo.croppedSourceExtent;
+    
+    float2 uvInput = (croppedSourceOffset + croppedSourceExtent * uvOutput) / float2(inTexture.get_width(), inTexture.get_height());
+    
+    constexpr sampler textureSampler (mag_filter::linear,
+                                      min_filter::linear);
+    
+    float4 inColor = inTexture.sample(textureSampler, uvInput);
+    
+    outTexture.write(inColor, gid);
 }
