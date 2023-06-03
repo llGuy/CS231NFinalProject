@@ -48,29 +48,49 @@
             return self;
         }
         
+        AVCaptureDeviceInput *input = [AVCaptureDeviceInput deviceInputWithDevice:mVideoDevice error:&error];
+        [mCaptureSession addInput:input];
+        
         for(AVCaptureDeviceFormat *format in [mVideoDevice formats])
         {
+            // Check for 60 FPS
             CMFormatDescriptionRef description = format.formatDescription;
             float maxFrameRate = ((AVFrameRateRange*)[format.videoSupportedFrameRateRanges objectAtIndex:0]).maxFrameRate;
             
-            if(maxFrameRate > 60 && CMFormatDescriptionGetMediaSubType(description) == kCVPixelFormatType_420YpCbCr8BiPlanarFullRange)
+            BOOL containsColorSpace = false;
+            for (NSNumber *colorSpace in format.supportedColorSpaces)
             {
-                if ([mVideoDevice lockForConfiguration:NULL] == YES)
+                if (colorSpace.intValue == AVCaptureColorSpace_sRGB)
                 {
-                    mVideoDevice.activeFormat = format;
-                    [mVideoDevice setActiveVideoMinFrameDuration:CMTimeMake(10,600)];
-                    [mVideoDevice setActiveVideoMaxFrameDuration:CMTimeMake(10,600)];
-                    [mVideoDevice unlockForConfiguration];
-                    NSLog(@"Max Frame Rate: %f", maxFrameRate);
+                    containsColorSpace = true;
                     break;
-                    // NSLog(@"formats  %@ %@ %@", format.mediaType, format.formatDescription, format.videoSupportedFrameRateRanges);
                 }
             }
+            
+            if (!containsColorSpace)
+                continue;
+            
+            if (maxFrameRate < 60.0f)
+                continue;
+            
+            CMVideoDimensions dim = CMVideoFormatDescriptionGetDimensions(description);
+            if (dim.width < 2000 && dim.height < 1500)
+                continue;
+            
+            // We can proceed to set to this format.
+            if ([mVideoDevice lockForConfiguration:NULL] == YES)
+            {
+                NSLog(@"formats  %@ %@ %@", format.mediaType, format.formatDescription, format.videoSupportedFrameRateRanges);
+                
+                mVideoDevice.activeFormat = format;
+                [mVideoDevice setActiveVideoMinFrameDuration:CMTimeMake(1,60)];
+                [mVideoDevice setActiveVideoMaxFrameDuration:CMTimeMake(1,60)];
+                [mVideoDevice setExposureMode:AVCaptureExposureModeAutoExpose];
+                
+                [mVideoDevice unlockForConfiguration];
+                break;
+            }
         }
-
-        
-        AVCaptureDeviceInput *input = [AVCaptureDeviceInput deviceInputWithDevice:mVideoDevice error:&error];
-        [mCaptureSession addInput:input];
         
         mDispatchQueue = dispatch_queue_create("CameraSessionQueue", DISPATCH_QUEUE_SERIAL);
         

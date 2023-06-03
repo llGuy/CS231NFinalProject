@@ -15,6 +15,8 @@
 // Include header shared between C code here, which executes Metal API commands, and .metal files
 #import "ShaderTypes.h"
 
+#include "Time.h"
+
 @implementation Renderer
 {
     // Waits for a free camera slot, initialized to MAX_FRAMES_IN_FLIGHT
@@ -30,13 +32,18 @@
     id <MTLCommandQueue> mCommandQueue;
 
     // Compute pipeline.
-    id <MTLComputePipelineState> mRenderOutputPipeline;
+    id <MTLRenderPipelineState> mRenderOutputPipeline;
     
     // Camera outputs.
     id <MTLTexture> mCameraOutputs[MAX_FRAMES_IN_FLIGHT];
     
     // Encapsulates camera capture.
     Camera *mCamera;
+    
+    struct TimeStamp *mPrevTimeStamp;
+    struct TimeStamp *mCurrentTimeStamp;
+    
+    vector_uint2 mViewportSize;
 }
 
 -(nonnull instancetype)initWithMetalKitView:(nonnull MTKView *)view;
@@ -50,6 +57,11 @@
         
         mCamera = [[Camera alloc] initWithDevice:mDevice];
         mCurrentFrame = 0;
+        
+        mPrevTimeStamp = allocTimeStamp();
+        mCurrentTimeStamp = allocTimeStamp();
+        
+        getCurrentTime(mPrevTimeStamp);
     }
 
     return self;
@@ -65,12 +77,19 @@
     id<MTLLibrary> defaultLibrary = [mDevice newDefaultLibrary];
     
     // Create handle to shader-contained compute kernel.
-    id<MTLFunction> renderFunction = [defaultLibrary newFunctionWithName:@"renderKernel"];
+    id<MTLFunction> renderFunctionVertex = [defaultLibrary newFunctionWithName:@"renderVertex"];
+    id<MTLFunction> renderFunctionFragment = [defaultLibrary newFunctionWithName:@"renderFragment"];
     
-    // Initialize compute pipeline with our compute kernel,
-    // no error handling.
     NSError *error = NULL;
-    mRenderOutputPipeline = [mDevice newComputePipelineStateWithFunction:renderFunction error:&error];
+    
+    MTLRenderPipelineDescriptor *pipelineStateDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
+    pipelineStateDescriptor.label = @"Render Camera Output";
+    pipelineStateDescriptor.vertexFunction = renderFunctionVertex;
+    pipelineStateDescriptor.fragmentFunction = renderFunctionFragment;
+    pipelineStateDescriptor.colorAttachments[0].pixelFormat = view.colorPixelFormat;
+    
+    mRenderOutputPipeline = [mDevice newRenderPipelineStateWithDescriptor:pipelineStateDescriptor
+                                                                   error:&error];
     
     // Initialize the command queue.
     mCommandQueue = [mDevice newCommandQueue];
@@ -79,7 +98,6 @@
 /// Per frame updates here
 - (void)drawInMTKView:(nonnull MTKView *)view
 {
-
     // Wait for a free slot in mCameraOutputs.
     dispatch_semaphore_wait(mInFlightSemaphore, DISPATCH_TIME_FOREVER);
     
@@ -100,27 +118,40 @@
     if (newImg != nil)
     {
         mCameraOutputs[mCurrentFrame] = newImg;
+        
+#if 0
+        getCurrentTime(mCurrentTimeStamp);
+        float diff = getTimeDifference(mCurrentTimeStamp, mPrevTimeStamp);
+        getCurrentTime(mPrevTimeStamp);
+        
+        printf("%f\n", 1.0f / diff);
+#endif
     }
     
-    // ..
-    id<MTLComputeCommandEncoder> computeEncoder = [commandBuffer computeCommandEncoder];
-    
-    id<MTLTexture> targetTexture = view.currentDrawable.texture;
-    [computeEncoder setComputePipelineState:mRenderOutputPipeline];
-    [computeEncoder setTexture:mCameraOutputs[mCurrentFrame] atIndex:0];
-    [computeEncoder setTexture:targetTexture atIndex:1];
-    
-    MTLSize threadgroupSize = MTLSizeMake(16, 16, 1);
-    MTLSize threadgroupCount;
-    
-    threadgroupCount.width  = (targetTexture.width  + threadgroupSize.width -  1) / threadgroupSize.width;
-    
-    threadgroupCount.height = (targetTexture.height + threadgroupSize.height - 1) / threadgroupSize.height;
-    
-    // The image data is 2D, so set depth to 1.
-    threadgroupCount.depth = 1;
+    MTLRenderPassDescriptor *renderPassDescriptor = view.currentRenderPassDescriptor;
+    if (renderPassDescriptor != nil)
+    {
+        // Create the encoder for the render pass.
+        id<MTLRenderCommandEncoder> renderEncoder =
+        [commandBuffer renderCommandEncoderWithDescriptor:renderPassDescriptor];
+        renderEncoder.label = @"MyRenderEncoder";
 
-    [computeEncoder dispatchThreadgroups:threadgroupCount threadsPerThreadgroup:threadgroupSize];
+        // Set the region of the drawable to draw into.
+        [renderEncoder setViewport:(MTLViewport){0.0, 0.0, mViewportSize.x, mViewportSize.y, 0.0, 1.0 }];
+
+        [renderEncoder setRenderPipelineState:mRenderOutputPipeline];
+
+        [renderEncoder setFragmentTexture:mCameraOutputs[mCurrentFrame]
+                                  atIndex:0];
+
+        // Draw the quad.
+        [renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle
+                          vertexStart:0
+                          vertexCount:6];
+
+        [renderEncoder endEncoding];
+
+    }
     
     [commandBuffer presentDrawable:view.currentDrawable];
 
@@ -133,6 +164,9 @@
 /// Respond to drawable size or orientation changes here
 - (void)mtkView:(nonnull MTKView *)view drawableSizeWillChange:(CGSize)size
 {
+    mViewportSize.x = size.width;
+    mViewportSize.y = size.height;
+
 }
 
 @end
