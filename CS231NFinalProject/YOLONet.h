@@ -13,7 +13,7 @@
 @interface YOLONet : NSObject
 
 -(nonnull instancetype)initWithDevice:(nonnull id<MTLDevice>)device;
--(void)encodeGraph:(nonnull id<MTLTexture>)inputTexture commandBuffer:(id<MTLCommandBuffer>)cmdbuf;
+-(id<MTLTexture>)encodeGraph:(nonnull id<MTLTexture>)inputTexture commandBuffer:(id<MTLCommandBuffer>)cmdbuf;
 
 @end
 
