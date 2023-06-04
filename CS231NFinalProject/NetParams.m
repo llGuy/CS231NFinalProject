@@ -11,16 +11,16 @@
 #include "NetParams.h"
 
 @implementation NetParams
-//{
-//    float *mData;
-//
-//    NSString *mName;
-//
-//    int mKernelSize;
-//    int mInChannels;
-//    int mOutChannels;
-//}
-//
+{
+    float *mData;
+
+    NSString *mName;
+
+    int mKernelSize;
+    int mInChannels;
+    int mOutChannels;
+}
+
 //- (nonnull instancetype)init:(nonnull NSString *)name kernelSize:(int)size inputFeatureChannels:(int)inChannels outputFeatureChannels:(int)outChannels;
 //{
 //    mName = name;
@@ -30,25 +30,26 @@
 //}
 //
 //
-////- (nullable float *)biasTerms;
-////- (MPSDataType)dataType;
-////- (nonnull MPSCNNConvolutionDescriptor *)descriptor;
-////- (nullable NSString *)label;
+//- (nullable float *)biasTerms;
+//- (MPSDataType)dataType;
+//- (nonnull MPSCNNConvolutionDescriptor *)descriptor;
+//- (nullable NSString *)label;
 //
 //- (BOOL)load;
 //{
 //    // NSArray *paths = NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, YES);
-//    NSBundle *mainBundle = [NSBundle mainBundle];
-//
+//    NSString* path = [[NSBundle mainBundle] pathForResource:@"conv1" ofType:@"bin" inDirectory:@""];
+//    NSData *data = [NSData dataWithContentsOfFile:path options:NSDataReadingUncached error:NULL];
+//    
+//    return YES;
 //}
 //
-////- (nonnull float *)lookupTableForUInt8Kernel;
+//- (nonnull float *)lookupTableForUInt8Kernel;
 //- (void)purge;
 //{
-//    if (mData) free(mData);
 //}
-////- (nonnull vector_float2 *)rangesForUInt8Kernel;
-////- (nonnull void *)weights;
-////
+// - (nonnull vector_float2 *)rangesForUInt8Kernel;
+//- (nonnull void *)weights;
 //
+
 @end

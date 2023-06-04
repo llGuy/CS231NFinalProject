@@ -86,6 +86,10 @@ struct FrameData
         
         mMeshAllocator = [[MTKMeshBufferAllocator alloc]
                           initWithDevice: mDevice];
+        
+        NSString* path = [[NSBundle mainBundle] pathForResource:@"conv1" ofType:@"bin" inDirectory:@""];
+        NSData *data = [NSData dataWithContentsOfFile:path options:NSDataReadingUncached error:NULL];
+        printf("%s: %d\n", [path cStringUsingEncoding:NSUTF8StringEncoding], (int)data.length);
     }
 
     return self;
