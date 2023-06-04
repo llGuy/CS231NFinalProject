@@ -102,3 +102,71 @@ kernel void cropAndRotateKernel(texture2d<float> inTexture [[texture(0)]],
     
     outTexture.write(inColor, gid);
 }
+
+typedef struct
+{
+    float2 position [[attribute(0)]];
+    float2 uvs [[attribute(1)]];
+} FontVertexIn;
+
+typedef struct
+{
+    float4 clipPosition [[position]];
+    float2 uvs;
+} FontVertexOut;
+
+vertex FontVertexOut
+renderFontVertex(FontVertexIn in [[stage_in]],
+                 uint vertexID [[vertex_id]])
+{
+    FontVertexOut out;
+    
+    out.clipPosition = float4(in.position, 0.0, 1.0);
+    
+    out.uvs = in.uvs;
+    
+    return out;
+}
+
+fragment float4 renderFontFragment(FontVertexOut in [[stage_in]],
+                                   texture2d<float> fontAtlas [[texture(0)]])
+{
+    constexpr sampler textureSampler (mag_filter::nearest,
+                                      min_filter::nearest);
+    
+    float4 inColor = fontAtlas.sample(textureSampler, in.uvs);
+    if (inColor.a < 0.5)
+        discard_fragment();
+    
+    return inColor;
+}
+
+typedef struct
+{
+    float4 position [[attribute(0)]];
+    float4 color [[attribute(1)]];
+} BoxVertexIn;
+
+typedef struct
+{
+    float4 clipPosition [[position]];
+    float4 color;
+} BoxVertexOut;
+
+vertex BoxVertexOut
+renderBoxVertex(BoxVertexIn in [[stage_in]],
+                 uint vertexID [[vertex_id]])
+{
+    BoxVertexOut out;
+    
+    out.clipPosition = float4(in.position.xy, 0.0, 1.0);
+    
+    out.color = in.color;
+    
+    return out;
+}
+
+fragment float4 renderBoxFragment(BoxVertexOut in [[stage_in]])
+{
+    return in.color;
+}

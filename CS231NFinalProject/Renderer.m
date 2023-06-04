@@ -19,9 +19,13 @@
 #include "Time.h"
 
 #import "YOLONet.h"
+#import "FontRenderer.h"
 
 struct FrameData
 {
+    struct FontRenderInfo textRender;
+    struct BoxRenderInfo boxRender;
+    
     id<MTLTexture> cameraOutput;
     id<MTLTexture> croppedCameraOutput;
     
@@ -50,6 +54,8 @@ struct FrameData
     id <MTLComputePipelineState> mCropPipeline;
     
     MPSImageGaussianBlur *mGaussianKernel;
+    
+    FontRenderer *mFontRenderer;
     
     // The network that we will run.
     YOLONet *mNet;
@@ -90,6 +96,7 @@ struct FrameData
         
         getCurrentTime(mPrevTimeStamp);
         
+
         mMeshAllocator = [[MTKMeshBufferAllocator alloc]
                           initWithDevice: mDevice];
     }
@@ -157,14 +164,54 @@ struct FrameData
     pipelineStateDescriptor.depthAttachmentPixelFormat = view.depthStencilPixelFormat;
     pipelineStateDescriptor.stencilAttachmentPixelFormat = view.depthStencilPixelFormat;
 
-    
     mRenderOutputPipeline = [mDevice newRenderPipelineStateWithDescriptor:pipelineStateDescriptor
                                                                     error:&error];
+    
+    // Create the font rendering pipeline
+    mFontRenderer = [[FontRenderer alloc] initWithDevice:mDevice defaultLibrary:defaultLibrary view:view];
+    
+    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
+    {
+        mFrames[i].textRender = [mFontRenderer makeFontRenderInfo:mDevice];
+        mFrames[i].boxRender = [mFontRenderer makeBoxRenderInfo:mDevice];
+    }
     
     [self createImageProcessingPipeline:defaultLibrary];
     
     // Initialize the command queue.
     mCommandQueue = [mDevice newCommandQueue];
+}
+
+- (void)encodePredictionRender:(nonnull MTKView *)view encoder:(id<MTLRenderCommandEncoder>)renderEncoder
+{
+    struct Prediction predictions[20];
+    int predictionCount;
+    [mNet makeBoundingBoxes:mFrames[mCurrentFrame].netOutput predictions:predictions predictionCount:&predictionCount];
+    
+    for (int i = 0; i < predictionCount; ++i)
+    {
+        struct Prediction *currentPrediction = &predictions[i];
+        
+        float xRatio = (float)mViewportSize.x / 416.0f;
+        float yRatio = (float)mViewportSize.y / 416.0f;
+        
+        vector_int2 pxStart = simd_make_int2((int)(xRatio * (float)currentPrediction->offset.x), (int)(yRatio * (float)currentPrediction->offset.y));
+        vector_int2 pxExtent = simd_make_int2((int)(xRatio * (float)currentPrediction->extent.x), (int)(yRatio * (float)currentPrediction->extent.y));
+        
+        [mFontRenderer pushBoxPixelCoords:&mFrames[mCurrentFrame].boxRender position:pxStart size:pxExtent color:simd_make_float4(1.0f, 0.0f, 0.0f, 1.0f) viewport:mViewportSize];
+        
+        vector_float2 ndcStart = simd_make_float2((float)pxStart.x / (float)mViewportSize.x, (float)pxStart.y / (float)mViewportSize.y);
+        [mFontRenderer pushText:&mFrames[mCurrentFrame].textRender text:[mNet getLabel:currentPrediction->classIndex] position:ndcStart viewport:mViewportSize];
+    }
+    
+    [mFontRenderer flushFonts:renderEncoder fontRenderInfo:&mFrames[mCurrentFrame].textRender];
+    [mFontRenderer flushBoxes:renderEncoder boxRenderInfo:&mFrames[mCurrentFrame].boxRender];
+    
+#if 0
+    // Now render the text
+    [mFontRenderer pushText:&mFrames[mCurrentFrame].textRender text:"Hello World!" position:simd_make_float2(0.1, 0.7) viewport:mViewportSize];
+    
+#endif
 }
 
 - (void)encodeFinalRender:(nonnull MTKView *)view commandBuffer:(id<MTLCommandBuffer>)cmdbuf
@@ -189,6 +236,8 @@ struct FrameData
         [renderEncoder drawPrimitives:MTLPrimitiveTypeTriangle
                           vertexStart:0
                           vertexCount:6];
+        
+        [self encodePredictionRender:view encoder:renderEncoder];
 
         [renderEncoder endEncoding];
     }
@@ -253,8 +302,6 @@ struct FrameData
 {
     // Wait for a free slot in mFrames.
     dispatch_semaphore_wait(mInFlightSemaphores[mCurrentFrame], DISPATCH_TIME_FOREVER);
-    
-    [mNet makeBoundingBoxes:mFrames[mCurrentFrame].netOutput];
     
     { // Make sure stuff gets presented to the screen immediately
         id<MTLCommandBuffer> commandBuffer = [mCommandQueue commandBuffer];

@@ -11,11 +11,20 @@
 #import <Metal/Metal.h>
 #import <MetalPerformanceShaders/MetalPerformanceShaders.h>
 
+struct Prediction
+{
+    int classIndex;
+    vector_int2 offset;
+    vector_int2 extent;
+    float score;
+};
+
 @interface YOLONet : NSObject
 
--(instancetype)initWithDevice:(nonnull id<MTLDevice>)device;
+-(nonnull instancetype)initWithDevice:(nonnull id<MTLDevice>)device;
 -(nonnull MPSImage *)encodeGraph:(nonnull id<MTLTexture>)inputTexture commandBuffer:(nonnull id<MTLCommandBuffer>)cmdbuf;
--(void)makeBoundingBoxes:(nonnull MPSImage *)inputImage;
+-(void)makeBoundingBoxes:(nonnull MPSImage *)inputImage predictions:(struct Prediction *)dst predictionCount:(int *)count;
+-(nonnull const char *)getLabel:(int)classIndex;
 
 @end
 

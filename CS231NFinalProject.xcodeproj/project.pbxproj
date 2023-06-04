@@ -17,6 +17,9 @@
 		0B77B36A2A2C3B4800561D06 /* conv4.bin in Resources */ = {isa = PBXBuildFile; fileRef = 0B77B3612A2C3B4700561D06 /* conv4.bin */; };
 		0B77B36B2A2C3B4800561D06 /* conv6.bin in Resources */ = {isa = PBXBuildFile; fileRef = 0B77B3622A2C3B4800561D06 /* conv6.bin */; };
 		0B77B36E2A2C43DC00561D06 /* PaddingPolicy.m in Sources */ = {isa = PBXBuildFile; fileRef = 0B77B36D2A2C43DC00561D06 /* PaddingPolicy.m */; };
+		0B77B39F2A2D208E00561D06 /* FontRenderer.mm in Sources */ = {isa = PBXBuildFile; fileRef = 0B77B39E2A2D208E00561D06 /* FontRenderer.mm */; };
+		0B77B3A22A2D387B00561D06 /* fixedsys.fnt in Resources */ = {isa = PBXBuildFile; fileRef = 0B77B3A02A2D387B00561D06 /* fixedsys.fnt */; };
+		0B77B3A32A2D387B00561D06 /* fixedsys.png in Resources */ = {isa = PBXBuildFile; fileRef = 0B77B3A12A2D387B00561D06 /* fixedsys.png */; };
 		0BB6021B2A291FE800A5A492 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 0BB6021A2A291FE800A5A492 /* AppDelegate.m */; };
 		0BB6021E2A291FE800A5A492 /* Renderer.m in Sources */ = {isa = PBXBuildFile; fileRef = 0BB6021D2A291FE800A5A492 /* Renderer.m */; };
 		0BB602212A291FE800A5A492 /* GameViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 0BB602202A291FE800A5A492 /* GameViewController.m */; };
@@ -28,7 +31,7 @@
 		0BB602362A2A56F400A5A492 /* Camera.m in Sources */ = {isa = PBXBuildFile; fileRef = 0BB602352A2A56F400A5A492 /* Camera.m */; };
 		0BB602392A2A5F2300A5A492 /* NSMutableArray+QueueAdditions.m in Sources */ = {isa = PBXBuildFile; fileRef = 0BB602382A2A5F2300A5A492 /* NSMutableArray+QueueAdditions.m */; };
 		0BDA0BD52A2B100800E55F24 /* Time.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0BDA0BD42A2B100800E55F24 /* Time.cpp */; };
-		0BDA0C092A2C20CA00E55F24 /* YOLONet.m in Sources */ = {isa = PBXBuildFile; fileRef = 0BDA0C082A2C20CA00E55F24 /* YOLONet.m */; };
+		0BDA0C092A2C20CA00E55F24 /* YOLONet.mm in Sources */ = {isa = PBXBuildFile; fileRef = 0BDA0C082A2C20CA00E55F24 /* YOLONet.mm */; };
 		0BDA0C0B2A2C243B00E55F24 /* NetParams.m in Sources */ = {isa = PBXBuildFile; fileRef = 0BDA0C0A2A2C243B00E55F24 /* NetParams.m */; };
 /* End PBXBuildFile section */
 
@@ -44,6 +47,10 @@
 		0B77B3622A2C3B4800561D06 /* conv6.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; path = conv6.bin; sourceTree = "<group>"; };
 		0B77B36C2A2C43CE00561D06 /* PaddingPolicy.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PaddingPolicy.h; sourceTree = "<group>"; };
 		0B77B36D2A2C43DC00561D06 /* PaddingPolicy.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PaddingPolicy.m; sourceTree = "<group>"; };
+		0B77B39D2A2D208E00561D06 /* FontRenderer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FontRenderer.h; sourceTree = "<group>"; };
+		0B77B39E2A2D208E00561D06 /* FontRenderer.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = FontRenderer.mm; sourceTree = "<group>"; };
+		0B77B3A02A2D387B00561D06 /* fixedsys.fnt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = fixedsys.fnt; sourceTree = "<group>"; };
+		0B77B3A12A2D387B00561D06 /* fixedsys.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = fixedsys.png; sourceTree = "<group>"; };
 		0BB602162A291FE800A5A492 /* CS231NFinalProject.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CS231NFinalProject.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		0BB602192A291FE800A5A492 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		0BB6021A2A291FE800A5A492 /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
@@ -66,7 +73,7 @@
 		0BDA0BD32A2B100800E55F24 /* Time.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Time.h; sourceTree = "<group>"; };
 		0BDA0BD42A2B100800E55F24 /* Time.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Time.cpp; sourceTree = "<group>"; };
 		0BDA0C072A2C20BD00E55F24 /* YOLONet.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = YOLONet.h; sourceTree = "<group>"; };
-		0BDA0C082A2C20CA00E55F24 /* YOLONet.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = YOLONet.m; sourceTree = "<group>"; };
+		0BDA0C082A2C20CA00E55F24 /* YOLONet.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = YOLONet.mm; sourceTree = "<group>"; };
 		0BDA0C0A2A2C243B00E55F24 /* NetParams.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = NetParams.m; sourceTree = "<group>"; };
 		0BDA0C0C2A2C244500E55F24 /* NetParams.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = NetParams.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -85,6 +92,8 @@
 		0B77B3472A2C380400561D06 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				0B77B3A02A2D387B00561D06 /* fixedsys.fnt */,
+				0B77B3A12A2D387B00561D06 /* fixedsys.png */,
 				0B77B35F2A2C3B4700561D06 /* conv1.bin */,
 				0B77B3602A2C3B4700561D06 /* conv2.bin */,
 				0B77B35A2A2C3B4600561D06 /* conv3.bin */,
@@ -139,11 +148,13 @@
 				0BB602382A2A5F2300A5A492 /* NSMutableArray+QueueAdditions.m */,
 				0BB6023B2A2A60B200A5A492 /* Def.h */,
 				0BDA0C072A2C20BD00E55F24 /* YOLONet.h */,
-				0BDA0C082A2C20CA00E55F24 /* YOLONet.m */,
+				0BDA0C082A2C20CA00E55F24 /* YOLONet.mm */,
 				0BDA0C0A2A2C243B00E55F24 /* NetParams.m */,
 				0BDA0C0C2A2C244500E55F24 /* NetParams.h */,
 				0B77B36C2A2C43CE00561D06 /* PaddingPolicy.h */,
 				0B77B36D2A2C43DC00561D06 /* PaddingPolicy.m */,
+				0B77B39D2A2D208E00561D06 /* FontRenderer.h */,
+				0B77B39E2A2D208E00561D06 /* FontRenderer.mm */,
 			);
 			path = CS231NFinalProject;
 			sourceTree = "<group>";
@@ -211,8 +222,10 @@
 				0B77B3662A2C3B4800561D06 /* conv8.bin in Resources */,
 				0B77B3632A2C3B4800561D06 /* conv3.bin in Resources */,
 				0B77B3642A2C3B4800561D06 /* conv5.bin in Resources */,
+				0B77B3A32A2D387B00561D06 /* fixedsys.png in Resources */,
 				0B77B36A2A2C3B4800561D06 /* conv4.bin in Resources */,
 				0B77B3652A2C3B4800561D06 /* conv7.bin in Resources */,
+				0B77B3A22A2D387B00561D06 /* fixedsys.fnt in Resources */,
 				0BB602292A291FE900A5A492 /* Assets.xcassets in Resources */,
 				0BB602272A291FE800A5A492 /* Main.storyboard in Resources */,
 				0B77B3692A2C3B4800561D06 /* conv2.bin in Resources */,
@@ -228,11 +241,12 @@
 			buildActionMask = 2147483647;
 			files = (
 				0BDA0BD52A2B100800E55F24 /* Time.cpp in Sources */,
+				0B77B39F2A2D208E00561D06 /* FontRenderer.mm in Sources */,
 				0BB6022E2A291FE900A5A492 /* main.m in Sources */,
 				0BB602232A291FE800A5A492 /* Shaders.metal in Sources */,
 				0BB6021E2A291FE800A5A492 /* Renderer.m in Sources */,
 				0BB602212A291FE800A5A492 /* GameViewController.m in Sources */,
-				0BDA0C092A2C20CA00E55F24 /* YOLONet.m in Sources */,
+				0BDA0C092A2C20CA00E55F24 /* YOLONet.mm in Sources */,
 				0BB602362A2A56F400A5A492 /* Camera.m in Sources */,
 				0BDA0C0B2A2C243B00E55F24 /* NetParams.m in Sources */,
 				0BB6021B2A291FE800A5A492 /* AppDelegate.m in Sources */,
@@ -380,7 +394,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = Z6VZBNPFP4;
+				DEVELOPMENT_TEAM = MB79LP3G7N;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = CS231NFinalProject/Info.plist;
 				INFOPLIST_KEY_NSCameraUsageDescription = "CS231NFinalProject camera use";
@@ -397,7 +411,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = .CS231NFinalProject;
+				PRODUCT_BUNDLE_IDENTIFIER = lol.CS231NFinalProject;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -411,7 +425,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = Z6VZBNPFP4;
+				DEVELOPMENT_TEAM = MB79LP3G7N;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = CS231NFinalProject/Info.plist;
 				INFOPLIST_KEY_NSCameraUsageDescription = "CS231NFinalProject camera use";
@@ -428,7 +442,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = .CS231NFinalProject;
+				PRODUCT_BUNDLE_IDENTIFIER = lol.CS231NFinalProject;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				TARGETED_DEVICE_FAMILY = "1,2";
