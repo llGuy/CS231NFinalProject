@@ -47,6 +47,24 @@
     MPSCNNConvolutionNode *convNode6 = [[MPSCNNConvolutionNode alloc] initWithSource:poolNode5.resultImage weights:[[NetParams alloc] init:@"conv6" kernelSize:3 inputFeatureChannels:256 outputFeatureChannels:512]];
     MPSCNNPoolingMaxNode *poolNode6 = [[MPSCNNPoolingMaxNode alloc] initWithSource:convNode6.resultImage filterSize:2 stride:1];
     poolNode6.paddingPolicy = [[Pool6PaddingPolicy alloc] init];
+    
+    MPSCNNConvolutionNode *convNode7 = [[MPSCNNConvolutionNode alloc] initWithSource:poolNode6.resultImage weights:[[NetParams alloc] init:@"conv7" kernelSize:3 inputFeatureChannels:512 outputFeatureChannels:1024]];
+    
+    MPSCNNConvolutionNode *convNode8 = [[MPSCNNConvolutionNode alloc] initWithSource:convNode7.resultImage weights:[[NetParams alloc] init:@"conv8" kernelSize:3 inputFeatureChannels:1024 outputFeatureChannels:1024]];
+    
+    MPSCNNConvolutionNode *convNode9 = [[MPSCNNConvolutionNode alloc] initWithSource:convNode8.resultImage weights:[[NetParams alloc] init:@"conv9" kernelSize:1 inputFeatureChannels:1024 outputFeatureChannels:125]];
+    
+    NSArray *result = @[convNode9.resultImage];
+    BOOL needed = true;
+    mNetGraph = [[MPSNNGraph alloc] initWithDevice:device resultImages:result resultsAreNeeded:&needed];
+}
+
+-(void)encodeGraph:(nonnull id<MTLTexture>)inputTexture commandBuffer:(id<MTLCommandBuffer>)cmdbuf
+{
+    MPSImage *mpsImage = [[MPSImage alloc] initWithTexture:inputTexture featureChannels:3];
+    
+    NSArray *inputImages = @[ mpsImage ];
+    [mNetGraph encodeToCommandBuffer:cmdbuf sourceImages:inputImages];
 }
 
 - (nonnull instancetype)initWithDevice:(id<MTLDevice>)device

@@ -13,6 +13,7 @@
 @interface NetParams : NSObject <MPSCNNConvolutionDataSource>
 
 - (nonnull instancetype)init:(nonnull NSString *)name kernelSize:(int)size inputFeatureChannels:(int)inChannels outputFeatureChannels:(int)outChannels;
+- (nonnull instancetype)initNoLeaky:(nonnull NSString *)name kernelSize:(int)size inputFeatureChannels:(int)inChannels outputFeatureChannels:(int)outChannels;
 - (nullable float *)biasTerms;
 - (MPSDataType)dataType;
 - (nonnull MPSCNNConvolutionDescriptor *)descriptor;

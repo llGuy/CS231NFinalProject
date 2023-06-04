@@ -18,6 +18,8 @@
 
 #include "Time.h"
 
+#import "YOLONet.h"
+
 struct FrameData
 {
     id<MTLTexture> cameraOutput;
@@ -46,7 +48,8 @@ struct FrameData
     
     MPSImageGaussianBlur *mGaussianKernel;
     
-    MPSNNGraph *mNetGraph;
+    // The network that we will run.
+    YOLONet *mNet;
     
     // Camera outputs.
     struct FrameData mFrames[MAX_FRAMES_IN_FLIGHT];
@@ -100,6 +103,8 @@ struct FrameData
     mCropPipeline = [mDevice newComputePipelineStateWithFunction:cropFunction error: &error];
     
     mGaussianKernel = [[MPSImageGaussianBlur alloc] initWithDevice:mDevice sigma:10.0f];
+    
+    mNet = [[YOLONet alloc] initWithDevice:mDevice];
 }
 
 - (void)createCroppedCameraImages:(nonnull MTKView *)view;
@@ -225,7 +230,9 @@ struct FrameData
 {
     [self encodeCropAndRotate:cmdbuf];
     
-    [mGaussianKernel encodeToCommandBuffer:cmdbuf inPlaceTexture:&mFrames[mCurrentFrame].croppedCameraOutput fallbackCopyAllocator:nil];
+    [mNet encodeGraph:mFrames[mCurrentFrame].croppedCameraOutput commandBuffer:cmdbuf];
+    
+    // [mGaussianKernel encodeToCommandBuffer:cmdbuf inPlaceTexture:&mFrames[mCurrentFrame].croppedCameraOutput fallbackCopyAllocator:nil];
 }
 
 - (void)calculateFramerate

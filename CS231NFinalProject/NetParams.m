@@ -19,6 +19,8 @@
     int mKernelSize;
     int mInChannels;
     int mOutChannels;
+    
+    BOOL mLeaky;
 }
 
 - (nonnull instancetype)init:(nonnull NSString *)name kernelSize:(int)size inputFeatureChannels:(int)inChannels outputFeatureChannels:(int)outChannels;
@@ -31,6 +33,26 @@
         mKernelSize = size;
         mInChannels = inChannels;
         mOutChannels = outChannels;
+        
+        mLeaky = true;
+    }
+    
+    return self;
+}
+
+
+- (nonnull instancetype)initNoLeaky:(nonnull NSString *)name kernelSize:(int)size inputFeatureChannels:(int)inChannels outputFeatureChannels:(int)outChannels;
+{
+    self = [super init];
+    
+    if (self)
+    {
+        mName = name;
+        mKernelSize = size;
+        mInChannels = inChannels;
+        mOutChannels = outChannels;
+        
+        mLeaky = false;
     }
     
     return self;
@@ -51,17 +73,25 @@
 {
     MPSCNNConvolutionDescriptor *desc = [MPSCNNConvolutionDescriptor cnnConvolutionDescriptorWithKernelWidth:mKernelSize kernelHeight:mKernelSize inputFeatureChannels:mInChannels outputFeatureChannels:mOutChannels];
     
-    // Set activation to leaky relu
-    MPSNNNeuronDescriptor *neuronDescriptor = [MPSNNNeuronDescriptor cnnNeuronDescriptorWithType:MPSCNNNeuronTypeReLU a:0.1 b:0];
-    [desc setFusedNeuronDescriptor:neuronDescriptor];
-    
-    // Set the batch normalization parameters
-    float *weightsPtr = (float *)mData.bytes;
-    float *meanPtr = weightsPtr + (mInChannels * mKernelSize * mKernelSize * mOutChannels);
-    float *variancePtr = meanPtr + mOutChannels;
-    float *gammaPtr = variancePtr + mOutChannels;
-    float *betaPtr = gammaPtr + mOutChannels;
-    [desc setBatchNormalizationParametersForInferenceWithMean:meanPtr variance:variancePtr gamma:gammaPtr beta:betaPtr epsilon:1e-3];
+    if (mLeaky)
+    {
+        // Set activation to leaky relu
+        MPSNNNeuronDescriptor *neuronDescriptor = [MPSNNNeuronDescriptor cnnNeuronDescriptorWithType:MPSCNNNeuronTypeReLU a:0.1 b:0];
+        [desc setFusedNeuronDescriptor:neuronDescriptor];
+        
+        // Set the batch normalization parameters
+        float *weightsPtr = (float *)mData.bytes;
+        float *meanPtr = weightsPtr + (mInChannels * mKernelSize * mKernelSize * mOutChannels);
+        float *variancePtr = meanPtr + mOutChannels;
+        float *gammaPtr = variancePtr + mOutChannels;
+        float *betaPtr = gammaPtr + mOutChannels;
+        [desc setBatchNormalizationParametersForInferenceWithMean:meanPtr variance:variancePtr gamma:gammaPtr beta:betaPtr epsilon:1e-3];
+    }
+    else
+    {
+        MPSNNNeuronDescriptor *neuronDescriptor = [MPSNNNeuronDescriptor cnnNeuronDescriptorWithType:MPSCNNNeuronTypeNone a:0 b:0];
+        [desc setFusedNeuronDescriptor:neuronDescriptor];
+    }
     
     return desc;
 }
