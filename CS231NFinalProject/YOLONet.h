@@ -9,11 +9,13 @@
 #define YOLONet_h
 
 #import <Metal/Metal.h>
+#import <MetalPerformanceShaders/MetalPerformanceShaders.h>
 
 @interface YOLONet : NSObject
 
--(nonnull instancetype)initWithDevice:(nonnull id<MTLDevice>)device;
--(id<MTLTexture>)encodeGraph:(nonnull id<MTLTexture>)inputTexture commandBuffer:(id<MTLCommandBuffer>)cmdbuf;
+-(instancetype)initWithDevice:(nonnull id<MTLDevice>)device;
+-(nonnull id<MTLTexture>)encodeGraph:(nonnull id<MTLTexture>)inputTexture commandBuffer:(nonnull id<MTLCommandBuffer>)cmdbuf;
+-(void)makeBoundingBoxes:(nonnull MPSImage *)inputImage;
 
 @end
 

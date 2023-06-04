@@ -10,6 +10,8 @@
 #import "YOLONet.h"
 #import "NetParams.h"
 #import "PaddingPolicy.h"
+#import "math.h"
+#import <Accelerate/Accelerate.h>
 
 #import <MetalPerformanceShaders/MetalPerformanceShaders.h>
 
@@ -21,6 +23,22 @@
     int mInputWidth;
     int mInputHeight;
 }
+
+float blockSize = 32;
+int gridHeight = 13;
+int gridWidth = 13;
+int boxesPerCell = 5;
+int numClasses = 20;
+
+float const anchors[] = {1.08f, 1.19f, 3.42f, 4.41f, 6.63f, 11.38f, 9.42f, 5.11f, 16.62f, 10.52f};
+
+char const *labels[] = {
+    "aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat",
+    "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person",
+    "pottedplant", "sheep", "sofa", "train", "tvmonitor"
+};
+
+float keepThreshold = 0.3;
 
 - (void)createGraph:(id<MTLDevice>)device
 {
@@ -64,12 +82,6 @@
     NSLog(@"%@", mNetGraph.debugDescription);
 }
 
-float blockSize = 32;
-int gridHeight = 13;
-int gridWidth = 13;
-int boxesPerCell = 5;
-int numClasses = 20;
-
 int float_offset(int channel, int x, int y) {
     
     int slice = channel / 4;
@@ -85,15 +97,15 @@ float sigmoid(float x) {
 -(void)makeBoundingBoxes:(MPSImage *) image
 {
     void *buffer = malloc(sizeof(float) * 13 * 13 * 128);
-    [image readBytes: buffer dataLayout:MPSDataLayoutFeatureChannelsxHeightxWidth imageIndex:0];
+    [image readBytes:buffer dataLayout:MPSDataLayoutFeatureChannelsxHeightxWidth imageIndex:0];
     float *features = (float *) buffer;
     float tx, ty, tw, th, tc, x, y, w, h, confidence;
-
     
     for (int cy = 0; cy < gridHeight; cy++) {
         for (int cx = 0; cx < gridWidth; cx++) {
             for (int b = 0; b < boxesPerCell; b++){
                 
+                // Operate on bounding boxes, determine which to keep.
                 int channel = b * (numClasses + 5);
                 tx = features[float_offset(channel, cx, cy)];
                 ty = features[float_offset(channel + 1, cx, cy)];
@@ -101,16 +113,51 @@ float sigmoid(float x) {
                 th = features[float_offset(channel + 3, cx, cy)];
                 tc = features[float_offset(channel + 4, cx, cy)];
                 
-                x = (float)cx + sigmoid(tx) * blockSize;
-                y = (float)cy + sigmoid(ty) * blockSize;
+                // Location of bounding box in input image.
+                x = (float) cx + sigmoid(tx) * blockSize;
+                y = (float) cy + sigmoid(ty) * blockSize;
 
+                //
                 w = exp(tw) * anchors[2 * b] * blockSize;
                 h = exp(th) * anchors[2 * b + 1] * blockSize;
 
                 confidence = sigmoid(tc);
                 
+                int numClasses = sizeof(labels) / sizeof(labels[0]);
+                float classes[numClasses];
+                for (int i = 0; i < numClasses; ++i)
+                {
+                    classes[i] = features[float_offset(channel + 5 + i, cx, cy)];
+                }
                 
-
+                // Compute softmax.
+                int max = 0;
+                for (int i = 0; i < numClasses; ++i)
+                {
+                    if (classes[i] > classes[max]) max = i;
+                }
+                float sum = 1e-4;
+                for (int i = 0; i < numClasses; ++i)
+                {
+                    sum += exp(classes[i] - classes[max]);
+                }
+                for (int i = 0; i < numClasses; ++i)
+                {
+                    classes[i] = exp(classes[i] - classes[max]) / sum;
+                }
+                
+                // Argmax.
+                int detectedClass = max;
+                float detectedClassScore = classes[max];
+                
+                //
+                float confidenceInClass = detectedClassScore * confidence;
+                
+                //
+                if (confidenceInClass >= keepThreshold)
+                {
+                    printf("found %s\n", labels[detectedClass]);
+                }
             }
         }
     }

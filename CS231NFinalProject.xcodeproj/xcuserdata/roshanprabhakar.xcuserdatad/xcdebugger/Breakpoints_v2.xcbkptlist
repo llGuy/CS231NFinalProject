@@ -8,7 +8,7 @@
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
             uuid = "14DAF157-4FFE-4763-9395-C327211D8612"
-            shouldBeEnabled = "Yes"
+            shouldBeEnabled = "No"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "CS231NFinalProject/Renderer.m"
@@ -17,6 +17,22 @@
             startingLineNumber = "89"
             endingLineNumber = "89"
             landmarkName = "-initWithMetalKitView:"
+            landmarkType = "7">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "C38CFE19-9071-4F24-9705-26B335CFC9B3"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "CS231NFinalProject/YOLONet.m"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "98"
+            endingLineNumber = "98"
+            landmarkName = "-makeBoundingBoxes:"
             landmarkType = "7">
          </BreakpointContent>
       </BreakpointProxy>

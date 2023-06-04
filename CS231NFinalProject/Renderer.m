@@ -230,10 +230,8 @@ struct FrameData
 {
     [self encodeCropAndRotate:cmdbuf];
     
-    id<MTLTexture> netOutput = [mNet encodeGraph:mFrames[mCurrentFrame].croppedCameraOutput commandBuffer:cmdbuf];
-    
-    
-    // [mGaussianKernel encodeToCommandBuffer:cmdbuf inPlaceTexture:&mFrames[mCurrentFrame].croppedCameraOutput fallbackCopyAllocator:nil];
+    MPSImage *netOutput = [mNet encodeGraph:mFrames[mCurrentFrame].croppedCameraOutput commandBuffer:cmdbuf];
+    [mNet makeBoundingBoxes:netOutput];
 }
 
 - (void)calculateFramerate
