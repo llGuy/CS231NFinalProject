@@ -24,11 +24,13 @@
 
 - (void)createGraph:(id<MTLDevice>)device
 {
+    mInputWidth = 416;
+    mInputHeight = 416;
+    
     // Some preprocessing.
     MPSNNImageNode *inputImageNode = [[MPSNNImageNode alloc] initWithHandle:nil];
     MPSNNLanczosScaleNode *scaleNode = [[MPSNNLanczosScaleNode alloc] initWithSource:inputImageNode outputSize:MTLSizeMake(mInputWidth, mInputHeight, 1)];
     
-#if 0
     // Convolutions.
     MPSCNNConvolutionNode *convNode1 = [[MPSCNNConvolutionNode alloc] initWithSource:scaleNode.resultImage weights:[[NetParams alloc] init:@"conv1" kernelSize:3 inputFeatureChannels:3 outputFeatureChannels:16]];
     MPSCNNPoolingMaxNode *poolNode1 = [[MPSCNNPoolingMaxNode alloc] initWithSource:convNode1.resultImage filterSize:2];
@@ -54,9 +56,8 @@
     MPSCNNConvolutionNode *convNode8 = [[MPSCNNConvolutionNode alloc] initWithSource:convNode7.resultImage weights:[[NetParams alloc] init:@"conv8" kernelSize:3 inputFeatureChannels:1024 outputFeatureChannels:1024]];
     
     MPSCNNConvolutionNode *convNode9 = [[MPSCNNConvolutionNode alloc] initWithSource:convNode8.resultImage weights:[[NetParams alloc] init:@"conv9" kernelSize:1 inputFeatureChannels:1024 outputFeatureChannels:125]];
-#endif
     
-    NSArray *result = @[scaleNode.resultImage];
+    NSArray *result = @[convNode9.resultImage];
     BOOL needed = true;
     mNetGraph = [[MPSNNGraph alloc] initWithDevice:device resultImages:result resultsAreNeeded:&needed];
     
