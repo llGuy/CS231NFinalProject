@@ -188,6 +188,17 @@ struct FrameData
     int predictionCount;
     [mNet makeBoundingBoxes:mFrames[mCurrentFrame].netOutput predictions:predictions predictionCount:&predictionCount];
     
+    
+    {
+        // TEST BOUNDING BOX AND TEXT EXAMPLE
+        vector_int2 pxStart = simd_make_int2(mViewportSize.x-400, mViewportSize.y-700);
+        [mFontRenderer pushBoxPixelCoords:&mFrames[mCurrentFrame].boxRender position:pxStart size:simd_make_int2(300, 300) color:simd_make_float4(0.0f, 1.0f, 0.0f, 1.0f) viewport:mViewportSize];
+        
+        vector_float2 ndcStart = simd_make_float2((float)pxStart.x / (float)mViewportSize.x, (float)pxStart.y / (float)mViewportSize.y);
+        [mFontRenderer pushText:&mFrames[mCurrentFrame].textRender text:"Example Box" position:ndcStart viewport:mViewportSize];
+    }
+    
+    
     for (int i = 0; i < predictionCount; ++i)
     {
         struct Prediction *currentPrediction = &predictions[i];
