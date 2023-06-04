@@ -64,12 +64,17 @@
     NSLog(@"%@", mNetGraph.debugDescription);
 }
 
--(void)encodeGraph:(nonnull id<MTLTexture>)inputTexture commandBuffer:(id<MTLCommandBuffer>)cmdbuf
+-(id<MTLTexture>)encodeGraph:(nonnull id<MTLTexture>)inputTexture commandBuffer:(id<MTLCommandBuffer>)cmdbuf
 {
     MPSImage *mpsImage = [[MPSImage alloc] initWithTexture:inputTexture featureChannels:3];
     
     NSArray *inputImages = @[ mpsImage ];
-    [mNetGraph encodeToCommandBuffer:cmdbuf sourceImages:inputImages];
+    
+    MPSImage *result = [mNetGraph encodeToCommandBuffer:cmdbuf sourceImages:inputImages];
+    
+    printf("%d %d %d %d\n", (int)result.numberOfImages, (int)result.width, (int)result.height, (int)result.featureChannels);
+    
+    return result.texture;
 }
 
 - (nonnull instancetype)initWithDevice:(id<MTLDevice>)device

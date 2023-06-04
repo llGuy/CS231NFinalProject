@@ -230,7 +230,8 @@ struct FrameData
 {
     [self encodeCropAndRotate:cmdbuf];
     
-    [mNet encodeGraph:mFrames[mCurrentFrame].croppedCameraOutput commandBuffer:cmdbuf];
+    id<MTLTexture> netOutput = [mNet encodeGraph:mFrames[mCurrentFrame].croppedCameraOutput commandBuffer:cmdbuf];
+    
     
     // [mGaussianKernel encodeToCommandBuffer:cmdbuf inPlaceTexture:&mFrames[mCurrentFrame].croppedCameraOutput fallbackCopyAllocator:nil];
 }
@@ -298,7 +299,7 @@ struct FrameData
     }
     
     [self calculateFramerate];
-    [self printFramerate];
+    // [self printFramerate];
 }
 
 /// Respond to drawable size or orientation changes here
