@@ -46,6 +46,8 @@ struct FrameData
     
     MPSImageGaussianBlur *mGaussianKernel;
     
+    MPSNNGraph *mNetGraph;
+    
     // Camera outputs.
     struct FrameData mFrames[MAX_FRAMES_IN_FLIGHT];
     

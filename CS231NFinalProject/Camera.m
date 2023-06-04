@@ -74,7 +74,7 @@
                 continue;
             
             CMVideoDimensions dim = CMVideoFormatDescriptionGetDimensions(description);
-            if (dim.width < 2000 && dim.height < 1500)
+            if (dim.width < 1920 && dim.height < 1080)
                 continue;
             
             // We can proceed to set to this format.
