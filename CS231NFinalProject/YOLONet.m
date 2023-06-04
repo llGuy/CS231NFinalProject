@@ -94,7 +94,7 @@ float sigmoid(float x) {
     return 1.0 / (1.0 + exp(-x));
 }
 
--(void)makeBoundingBoxes:(MPSImage *) image
+-(void)makeBoundingBoxes:(nonnull MPSImage *)image
 {
     void *buffer = malloc(sizeof(float) * 13 * 13 * 128);
     [image readBytes:buffer dataLayout:MPSDataLayoutFeatureChannelsxHeightxWidth imageIndex:0];
@@ -158,6 +158,8 @@ float sigmoid(float x) {
                 {
                     printf("found %s\n", labels[detectedClass]);
                 }
+                
+                printf("%f\n", confidenceInClass);
             }
         }
     }
@@ -165,7 +167,7 @@ float sigmoid(float x) {
     free(buffer);
 }
 
--(id<MTLTexture>)encodeGraph:(nonnull id<MTLTexture>)inputTexture commandBuffer:(id<MTLCommandBuffer>)cmdbuf
+-(nonnull MPSImage *)encodeGraph:(nonnull id<MTLTexture>)inputTexture commandBuffer:(id<MTLCommandBuffer>)cmdbuf
 {
     MPSImage *mpsImage = [[MPSImage alloc] initWithTexture:inputTexture featureChannels:3];
     
@@ -173,9 +175,9 @@ float sigmoid(float x) {
     
     MPSImage *result = [mNetGraph encodeToCommandBuffer:cmdbuf sourceImages:inputImages];
     
-    printf("%d %d %d %d\n", (int)result.numberOfImages, (int)result.width, (int)result.height, (int)result.featureChannels);
+    // printf("%d %d %d %d\n", (int)result.numberOfImages, (int)result.width, (int)result.height, (int)result.featureChannels);
     
-    return result.texture;
+    return result;
 }
 
 - (nonnull instancetype)initWithDevice:(id<MTLDevice>)device

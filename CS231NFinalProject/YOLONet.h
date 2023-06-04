@@ -14,7 +14,7 @@
 @interface YOLONet : NSObject
 
 -(instancetype)initWithDevice:(nonnull id<MTLDevice>)device;
--(nonnull id<MTLTexture>)encodeGraph:(nonnull id<MTLTexture>)inputTexture commandBuffer:(nonnull id<MTLCommandBuffer>)cmdbuf;
+-(nonnull MPSImage *)encodeGraph:(nonnull id<MTLTexture>)inputTexture commandBuffer:(nonnull id<MTLCommandBuffer>)cmdbuf;
 -(void)makeBoundingBoxes:(nonnull MPSImage *)inputImage;
 
 @end
