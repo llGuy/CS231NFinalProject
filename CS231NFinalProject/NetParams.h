@@ -12,15 +12,16 @@
 
 @interface NetParams : NSObject <MPSCNNConvolutionDataSource>
 
-- (float *)biasTerms;
-- (MPSDataType)dataType;
-- (MPSCNNConvolutionDescriptor *)descriptor;
-- (NSString *)label;
-- (BOOL)load;
-- (float *)lookupTableForUInt8Kernel;
-- (void)purge;
-- (vector_float2 *)rangesForUInt8Kernel;
-- (void *)weights;
+//- (nonnull instancetype)init:(nonnull NSString *)name kernelSize:(int)size inputFeatureChannels:(int)inChannels outputFeatureChannels:(int)outChannels;
+//- (nullable float *)biasTerms;
+//- (MPSDataType)dataType;
+//- (nonnull MPSCNNConvolutionDescriptor *)descriptor;
+//- (nullable NSString *)label;
+//- (BOOL)load;
+//- (nonnull float *)lookupTableForUInt8Kernel;
+//- (void)purge;
+//- (nonnull vector_float2 *)rangesForUInt8Kernel;
+//- (nonnull void *)weights;
 
 @end
 
