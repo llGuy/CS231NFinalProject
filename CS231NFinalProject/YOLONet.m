@@ -64,6 +64,60 @@
     NSLog(@"%@", mNetGraph.debugDescription);
 }
 
+float blockSize = 32;
+int gridHeight = 13;
+int gridWidth = 13;
+int boxesPerCell = 5;
+int numClasses = 20;
+
+int float_offset(int channel, int x, int y) {
+    
+    int slice = channel / 4;
+    int indexInSlice = channel - slice*4;
+    int offset = slice*gridHeight*gridWidth*4 + y*gridWidth*4 + x*4 + indexInSlice;
+    return offset;
+}
+
+float sigmoid(float x) {
+    return 1.0 / (1.0 + exp(-x));
+}
+
+-(void)makeBoundingBoxes:(MPSImage *) image
+{
+    void *buffer = malloc(sizeof(float) * 13 * 13 * 128);
+    [image readBytes: buffer dataLayout:MPSDataLayoutFeatureChannelsxHeightxWidth imageIndex:0];
+    float *features = (float *) buffer;
+    float tx, ty, tw, th, tc, x, y, w, h, confidence;
+
+    
+    for (int cy = 0; cy < gridHeight; cy++) {
+        for (int cx = 0; cx < gridWidth; cx++) {
+            for (int b = 0; b < boxesPerCell; b++){
+                
+                int channel = b * (numClasses + 5);
+                tx = features[float_offset(channel, cx, cy)];
+                ty = features[float_offset(channel + 1, cx, cy)];
+                tw = features[float_offset(channel + 2, cx, cy)];
+                th = features[float_offset(channel + 3, cx, cy)];
+                tc = features[float_offset(channel + 4, cx, cy)];
+                
+                x = (float)cx + sigmoid(tx) * blockSize;
+                y = (float)cy + sigmoid(ty) * blockSize;
+
+                w = exp(tw) * anchors[2 * b] * blockSize;
+                h = exp(th) * anchors[2 * b + 1] * blockSize;
+
+                confidence = sigmoid(tc);
+                
+                
+
+            }
+        }
+    }
+    
+    free(buffer);
+}
+
 -(id<MTLTexture>)encodeGraph:(nonnull id<MTLTexture>)inputTexture commandBuffer:(id<MTLCommandBuffer>)cmdbuf
 {
     MPSImage *mpsImage = [[MPSImage alloc] initWithTexture:inputTexture featureChannels:3];
@@ -88,5 +142,7 @@
     
     return self;
 }
+
+
 
 @end
