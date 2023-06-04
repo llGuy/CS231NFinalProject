@@ -128,7 +128,9 @@ float sigmoid(float x) {
                 for (int i = 0; i < numClasses; ++i)
                 {
                     classes[i] = features[float_offset(channel + 5 + i, cx, cy)];
+                    // printf("%f ", classes[i]);
                 }
+                 // printf("\n");
                 
                 // Compute softmax.
                 int max = 0;
@@ -154,12 +156,12 @@ float sigmoid(float x) {
                 float confidenceInClass = detectedClassScore * confidence;
                 
                 //
-                if (confidenceInClass >= keepThreshold)
-                {
-                    printf("found %s\n", labels[detectedClass]);
-                }
-                
-                printf("%f\n", confidenceInClass);
+//                if (confidenceInClass >= keepThreshold)
+//                {
+//                    printf("found %s\n", labels[detectedClass]);
+//                }
+//
+//                printf("%d\n", detectedClass);
             }
         }
     }

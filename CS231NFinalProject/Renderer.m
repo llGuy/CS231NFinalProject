@@ -24,6 +24,9 @@ struct FrameData
 {
     id<MTLTexture> cameraOutput;
     id<MTLTexture> croppedCameraOutput;
+    
+    // After computation finishes
+    MPSImage *netOutput;
 };
 
 @implementation Renderer
@@ -230,8 +233,7 @@ struct FrameData
 {
     [self encodeCropAndRotate:cmdbuf];
     
-    MPSImage *netOutput = [mNet encodeGraph:mFrames[mCurrentFrame].croppedCameraOutput commandBuffer:cmdbuf];
-    [mNet makeBoundingBoxes:netOutput];
+    mFrames[mCurrentFrame].netOutput = [mNet encodeGraph:mFrames[mCurrentFrame].croppedCameraOutput commandBuffer:cmdbuf];
 }
 
 - (void)calculateFramerate
@@ -251,6 +253,8 @@ struct FrameData
 {
     // Wait for a free slot in mFrames.
     dispatch_semaphore_wait(mInFlightSemaphores[mCurrentFrame], DISPATCH_TIME_FOREVER);
+    
+    [mNet makeBoundingBoxes:mFrames[mCurrentFrame].netOutput];
     
     { // Make sure stuff gets presented to the screen immediately
         id<MTLCommandBuffer> commandBuffer = [mCommandQueue commandBuffer];
