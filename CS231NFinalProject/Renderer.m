@@ -360,7 +360,7 @@ struct FrameData
         else
         {
             /* Did not get new image from camera */
-            printf("Did not get new image from camera\n");
+            // printf("Did not get new image from camera\n");
         }
         
         [commandBuffer commit];
@@ -376,7 +376,7 @@ struct FrameData
     mViewportSize.x = size.width;
     mViewportSize.y = size.height;
     
-    printf("%d %d\n", mViewportSize.x, mViewportSize.y);
+    printf("Resized %d %d\n", mViewportSize.x, mViewportSize.y);
     
     [self createCroppedCameraImages:view];
 }

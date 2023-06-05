@@ -19,6 +19,56 @@
 
 #import <MetalPerformanceShaders/MetalPerformanceShaders.h>
 
+float decode(uint16_t float16_value)
+{
+    // MSB -> LSB
+    // float16=1bit: sign, 5bit: exponent, 10bit: fraction
+    // float32=1bit: sign, 8bit: exponent, 23bit: fraction
+    // for normal exponent(1 to 0x1e): value=2**(exponent-15)*(1.fraction)
+    // for denormalized exponent(0): value=2**-14*(0.fraction)
+    uint32_t sign = float16_value >> 15;
+    uint32_t exponent = (float16_value >> 10) & 0x1F;
+    uint32_t fraction = (float16_value & 0x3FF);
+    uint32_t float32_value;
+    if (exponent == 0)
+    {
+        if (fraction == 0)
+        {
+            // zero
+            float32_value = (sign << 31);
+        }
+        else
+        {
+            // can be represented as ordinary value in float32
+            // 2 ** -14 * 0.0101
+            // => 2 ** -16 * 1.0100
+            // int int_exponent = -14;
+            exponent = 127 - 14;
+            while ((fraction & (1 << 10)) == 0)
+            {
+                //int_exponent--;
+                exponent--;
+                fraction <<= 1;
+            }
+            fraction &= 0x3FF;
+            // int_exponent += 127;
+            float32_value = (sign << 31) | (exponent << 23) | (fraction << 13);
+        }
+    }
+    else if (exponent == 0x1F)
+    {
+        /* Inf or NaN */
+        float32_value = (sign << 31) | (0xFF << 23) | (fraction << 13);
+    }
+    else
+    {
+        /* ordinary number */
+        float32_value = (sign << 31) | ((exponent + (127-15)) << 23) | (fraction << 13);
+    }
+    
+    return *((float*)&float32_value);
+}
+
 static inline float sigmoid(float x)
 {
     return 1.0 / (1.0 + exp(-x));
@@ -29,6 +79,7 @@ static inline int floatOffset(int channel, int x, int y, int gridHeight, int gri
     int slice = channel / 4;
     int indexInSlice = channel - slice*4;
     int offset = slice*gridHeight*gridWidth*4 + y*gridWidth*4 + x*4 + indexInSlice;
+    
     return offset;
 }
 
@@ -51,8 +102,10 @@ static inline void softmax(float *inArr, int floatCount)
     for (int i = 0; i < floatCount; ++i)
         sum += exp(inArr[i] - inArr[max]);
     
+    float maxFloatValue = inArr[max];
+    
     for (int i = 0; i < floatCount; ++i)
-        inArr[i] = exp(inArr[i] - inArr[max]) / sum;
+        inArr[i] = exp(inArr[i] - maxFloatValue) / sum;
 }
 
 static inline float predictionIOU(const Prediction &a, const Prediction &b)
@@ -142,7 +195,7 @@ end:
     mGridWidth = 13;
     mBoxesPerCell = 5;
     mNumClasses = 20;
-    mKeepThreshold = 0.3;
+    mKeepThreshold = 0.5;
     
     float anchors[] = {1.08f, 1.19f, 3.42f, 4.41f, 6.63f, 11.38f, 9.42f, 5.11f, 16.62f, 10.52f};
     memcpy(mAnchors, anchors, sizeof(anchors));
@@ -196,12 +249,14 @@ end:
 
 -(void)makeBoundingBoxes:(nonnull MPSImage *)inputImage predictions:(struct Prediction *)dst predictionCount:(int *)count
 {
-    void *buffer = malloc(sizeof(float) * 13 * 13 * 128);
+    void *buffer = malloc(sizeof(uint16_t) * 13 * 13 * 128);
     [inputImage readBytes:buffer dataLayout:MPSDataLayoutFeatureChannelsxHeightxWidth imageIndex:0];
-    float *features = (float *) buffer;
+    float16_t *features = (float16_t *) buffer;
     float tx, ty, tw, th, tc, x, y, w, h, confidence;
-    
+   
     std::vector<Prediction> predictions;
+    
+    printf("%f\n", (float)features[0]);
     
     for (int cy = 0; cy < mGridHeight; cy++) {
         for (int cx = 0; cx < mGridWidth; cx++) {
@@ -209,11 +264,11 @@ end:
                 
                 // Operate on bounding boxes, determine which to keep.
                 int channel = b * (mNumClasses + 5);
-                tx = features[floatOffset(channel, cx, cy, mGridHeight, mGridWidth)];
-                ty = features[floatOffset(channel + 1, cx, cy, mGridHeight, mGridWidth)];
-                tw = features[floatOffset(channel + 2, cx, cy, mGridHeight, mGridWidth)];
-                th = features[floatOffset(channel + 3, cx, cy, mGridHeight, mGridWidth)];
-                tc = features[floatOffset(channel + 4, cx, cy, mGridHeight, mGridWidth)];
+                tx = (float)(features[floatOffset(channel, cx, cy, mGridHeight, mGridWidth)]);
+                ty = (float)(features[floatOffset(channel + 1, cx, cy, mGridHeight, mGridWidth)]);
+                tw = (float)(features[floatOffset(channel + 2, cx, cy, mGridHeight, mGridWidth)]);
+                th = (float)(features[floatOffset(channel + 3, cx, cy, mGridHeight, mGridWidth)]);
+                tc = (float)(features[floatOffset(channel + 4, cx, cy, mGridHeight, mGridWidth)]);
                 
                 // Location of bounding box in input image.
                 x = (float) cx + sigmoid(tx) * mBlockSize;
@@ -227,8 +282,30 @@ end:
                 
                 int numClasses = sizeof(mLabels) / sizeof(mLabels[0]);
                 float classes[numClasses];
+                
+                bool allZero = true;
+                
                 for (int i = 0; i < numClasses; ++i)
-                    classes[i] = features[floatOffset(channel + 5 + i, cx, cy, mGridHeight, mGridWidth)];
+                {
+                    classes[i] = (float)(features[floatOffset(channel + 5 + i, cx, cy, mGridHeight, mGridWidth)]);
+                    
+                    if (classes[i] != 0.0f)
+                        allZero = false;
+                }
+                
+                if (allZero)
+                    continue;
+                
+#if 0
+                float copy[numClasses];
+                memcpy(copy, classes, sizeof(classes));
+                
+                if (cx == 0 && cy == 0 && b == 0)
+                {
+                    for (int i= 0 ; i < numClasses; ++i)
+                        printf("%f\n", copy[i]);
+                }
+#endif
                 
                 softmax(classes, numClasses);
                 
@@ -242,10 +319,17 @@ end:
                 
                 if (confidenceInClass > mKeepThreshold)
                 {
+#if 0
+                    if (x-w/2.0f < 0.0f)
+                    {
+                        printf("Bug\n");
+                    }
+#endif
+                    
                     Prediction prediction = {
                         detectedClass,
-                        simd_make_int2(x - w/2, y - h/2),
-                        simd_make_int2(w, h),
+                        simd_make_int2((int)x - (int)w/2, (int)y - (int)h/2),
+                        simd_make_int2((int)w, (int)h),
                         confidenceInClass
                     };
                     
@@ -255,7 +339,7 @@ end:
         }
     }
     
-    auto selectedPredictions = nonMaxSuppression(predictions, 5, 0.7);
+    auto selectedPredictions = nonMaxSuppression(predictions, 10, 0.5);
     
     memcpy(dst, selectedPredictions.data(), sizeof(struct Prediction) * selectedPredictions.size());
     *count = (int)selectedPredictions.size();
@@ -265,7 +349,7 @@ end:
     
     for (int i = 0; i < selectedPredictions.size(); ++i)
     {
-        printf("%s\n", mLabels[selectedPredictions[i].classIndex]);
+        printf("%s: %f\n", mLabels[selectedPredictions[i].classIndex], selectedPredictions[i].score);
     }
     
     printf("\n");
