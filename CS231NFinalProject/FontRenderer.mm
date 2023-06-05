@@ -382,10 +382,9 @@ struct Text
 
 -(void)pushText:(struct FontRenderInfo *)info text:(char *)text position:(vector_float2)pos viewport:(vector_uint2)viewport
 {
-    static const float PIXEL_CHAR_HEIGHT = 1.5f;
-    
     // Pixel width of a character.
     uint32_t pixelCharWidth = 15;
+    uint32_t pixelCharHeight = (int)(1.3 * (float)pixelCharWidth);
     
     // Starting position of the text that will rendered.
     vector_float2 pixelCursorPosition = simd_make_float2((float)viewport.x * pos.x, (float)viewport.y * pos.y);
@@ -393,6 +392,13 @@ struct Text
     for (uint32_t character = 0; character < strlen(text);)
     {
         char currentCharValue = text[character];
+        
+        if (currentCharValue == '\n')
+        {
+            pixelCursorPosition = simd_make_float2((float)viewport.x * pos.x, pixelCursorPosition.y - (float)pixelCharHeight);
+            character++;
+            continue;
+        }
         
         FontCharacter *fontCharData = &mCharacters[(uint32_t)currentCharValue];
 

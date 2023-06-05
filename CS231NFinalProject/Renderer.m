@@ -182,12 +182,25 @@ struct FrameData
     mCommandQueue = [mDevice newCommandQueue];
 }
 
+- (void)encodeDebugText:(nonnull MTKView *)view encoder:(id<MTLRenderCommandEncoder>)renderEncoder
+{
+    char buffer[512] = {};
+    const char *status = "SIXTY BITCHES";
+    if ((int)(1.0f/mDt) < 50)
+        status = "SHIT FUCK";
+    sprintf(buffer, "Status: %s\nFramerate: %d\nFrametime: %d ms", status, (int)(1.0f/mDt), (int)(mDt * 1000.0f));
+    
+    vector_int2 pxStart = simd_make_int2(40, mViewportSize.y-150);
+    
+    vector_float2 ndcStart = simd_make_float2((float)pxStart.x / (float)mViewportSize.x, (float)pxStart.y / (float)mViewportSize.y);
+    [mFontRenderer pushText:&mFrames[mCurrentFrame].textRender text:buffer position:ndcStart viewport:mViewportSize];
+}
+
 - (void)encodePredictionRender:(nonnull MTKView *)view encoder:(id<MTLRenderCommandEncoder>)renderEncoder
 {
     struct Prediction predictions[20];
     int predictionCount;
     [mNet makeBoundingBoxes:mFrames[mCurrentFrame].netOutput predictions:predictions predictionCount:&predictionCount];
-    
     
     {
         // TEST BOUNDING BOX AND TEXT EXAMPLE
@@ -214,15 +227,6 @@ struct FrameData
         vector_float2 ndcStart = simd_make_float2((float)pxStart.x / (float)mViewportSize.x, (float)pxStart.y / (float)mViewportSize.y);
         [mFontRenderer pushText:&mFrames[mCurrentFrame].textRender text:[mNet getLabel:currentPrediction->classIndex] position:ndcStart viewport:mViewportSize];
     }
-    
-    [mFontRenderer flushFonts:renderEncoder fontRenderInfo:&mFrames[mCurrentFrame].textRender];
-    [mFontRenderer flushBoxes:renderEncoder boxRenderInfo:&mFrames[mCurrentFrame].boxRender];
-    
-#if 0
-    // Now render the text
-    [mFontRenderer pushText:&mFrames[mCurrentFrame].textRender text:"Hello World!" position:simd_make_float2(0.1, 0.7) viewport:mViewportSize];
-    
-#endif
 }
 
 - (void)encodeFinalRender:(nonnull MTKView *)view commandBuffer:(id<MTLCommandBuffer>)cmdbuf
@@ -248,7 +252,11 @@ struct FrameData
                           vertexStart:0
                           vertexCount:6];
         
+        [self encodeDebugText:view encoder:renderEncoder];
         [self encodePredictionRender:view encoder:renderEncoder];
+        
+        [mFontRenderer flushFonts:renderEncoder fontRenderInfo:&mFrames[mCurrentFrame].textRender];
+        [mFontRenderer flushBoxes:renderEncoder boxRenderInfo:&mFrames[mCurrentFrame].boxRender];
 
         [renderEncoder endEncoding];
     }
@@ -328,7 +336,7 @@ struct FrameData
     
     { // Commit a command buffer to start doing the image processing work immediately.
         id<MTLCommandBuffer> commandBuffer = [mCommandQueue commandBuffer];
-        commandBuffer.label = @"FrameCommandBuffer";
+        commandBuffer.label = @"ComputeCommandBuffer";
         
         // Tell metal to call a certain function when the command buffer finishes.
         __block dispatch_semaphore_t blockSema = mInFlightSemaphores[mCurrentFrame];
