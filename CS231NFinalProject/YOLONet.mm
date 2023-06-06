@@ -198,9 +198,14 @@ end:
     // Load the texture file
     MTKTextureLoader *loader = [[MTKTextureLoader alloc] initWithDevice: device];
     
+    NSDictionary<MTKTextureLoaderOption, id> *options = @{
+        MTKTextureLoaderOptionTextureUsage: @(MTLTextureUsageShaderRead),
+        MTKTextureLoaderOptionSRGB: @(NO)
+    };
+    
     NSString* path = [[NSBundle mainBundle] pathForResource:@"dog416" ofType:@"png" inDirectory:@""];
     NSURL *url = [NSURL fileURLWithPath:path];
-    mDebugTexture = [loader newTextureWithContentsOfURL:url options:nil error:&error];
+    mDebugTexture = [loader newTextureWithContentsOfURL:url options:options error:&error];
     
     if (error)
         NSLog(@"%@", error.description);
@@ -210,7 +215,7 @@ end:
     mGridWidth = 13;
     mBoxesPerCell = 5;
     mNumClasses = 20;
-    mKeepThreshold = 0.5;
+    mKeepThreshold = 0.3;
     
     float anchors[] = {1.08f, 1.19f, 3.42f, 4.41f, 6.63f, 11.38f, 9.42f, 5.11f, 16.62f, 10.52f};
     memcpy(mAnchors, anchors, sizeof(anchors));
@@ -288,7 +293,7 @@ end:
    
     std::vector<Prediction> predictions;
     
-    // printf("%f vs %d\n", (float)features[0], (int)features0[0]);
+    printf("%f vs %d\n", (float)features[0], (int)features0[0]);
     
     for (int cy = 0; cy < mGridHeight; cy++) {
         for (int cx = 0; cx < mGridWidth; cx++) {
@@ -395,6 +400,8 @@ end:
 {
     // MPSImage *mpsImage = [[MPSImage alloc] initWithTexture:inputTexture featureChannels:3];
     MPSImage *mpsImage = [[MPSImage alloc] initWithTexture:mDebugTexture featureChannels:3];
+    
+    NSLog(@"%@", mDebugTexture.description);
     
     NSArray *inputImages = @[ mpsImage ];
     
