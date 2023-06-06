@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0B1287942A2DC29300A05256 /* dog416.png in Resources */ = {isa = PBXBuildFile; fileRef = 0B1287932A2DC29300A05256 /* dog416.png */; };
 		0B77B3632A2C3B4800561D06 /* conv3.bin in Resources */ = {isa = PBXBuildFile; fileRef = 0B77B35A2A2C3B4600561D06 /* conv3.bin */; };
 		0B77B3642A2C3B4800561D06 /* conv5.bin in Resources */ = {isa = PBXBuildFile; fileRef = 0B77B35B2A2C3B4600561D06 /* conv5.bin */; };
 		0B77B3652A2C3B4800561D06 /* conv7.bin in Resources */ = {isa = PBXBuildFile; fileRef = 0B77B35C2A2C3B4600561D06 /* conv7.bin */; };
@@ -36,6 +37,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0B1287932A2DC29300A05256 /* dog416.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = dog416.png; sourceTree = "<group>"; };
 		0B77B35A2A2C3B4600561D06 /* conv3.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; path = conv3.bin; sourceTree = "<group>"; };
 		0B77B35B2A2C3B4600561D06 /* conv5.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; path = conv5.bin; sourceTree = "<group>"; };
 		0B77B35C2A2C3B4600561D06 /* conv7.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; path = conv7.bin; sourceTree = "<group>"; };
@@ -92,6 +94,7 @@
 		0B77B3472A2C380400561D06 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				0B1287932A2DC29300A05256 /* dog416.png */,
 				0B77B3A02A2D387B00561D06 /* fixedsys.fnt */,
 				0B77B3A12A2D387B00561D06 /* fixedsys.png */,
 				0B77B35F2A2C3B4700561D06 /* conv1.bin */,
@@ -216,6 +219,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0B1287942A2DC29300A05256 /* dog416.png in Resources */,
 				0B77B36B2A2C3B4800561D06 /* conv6.bin in Resources */,
 				0B77B3682A2C3B4800561D06 /* conv1.bin in Resources */,
 				0BB6022C2A291FE900A5A492 /* LaunchScreen.storyboard in Resources */,

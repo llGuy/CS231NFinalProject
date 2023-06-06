@@ -111,23 +111,17 @@
     {
     }
     
-    dispatch_queue_t backgroundQueue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
-    dispatch_async(backgroundQueue, ^{
-        [self->mCaptureSession startRunning];
-    });
+    // dispatch_queue_t backgroundQueue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
+    //dispatch_async(backgroundQueue, ^{
+    [self->mCaptureSession startRunning];
+    //});
 
     return self;
 }
 
 - (void)captureOutput:(AVCaptureOutput *)captureOutput didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer fromConnection:(AVCaptureConnection *)connection;
 {
-    /* Make sure that we don't overload the texture queue in case the renderer cannot catch up. */
-    [mQueueLock lock];
-    while ([mTextures count] > MAX_FRAMES_IN_FLIGHT-1)
-    {
-        [mTextures dequeue];
-    }
-    [mQueueLock unlock];
+    static CFTimeInterval last = 0.0;
     
     CVPixelBufferRef pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer);
     
@@ -143,7 +137,17 @@
         id<MTLTexture> newTexture = CVMetalTextureGetTexture(texture);
         
         [mQueueLock lock];
+        while ([mTextures count] > MAX_FRAMES_IN_FLIGHT-1)
+            [mTextures dequeue];
         [mTextures enqueue:newTexture];
+        
+#if 0
+        CFTimeInterval now = CACurrentMediaTime();
+        float dt = now - last;
+        printf("Camera images coming at %f FPS\n", (float)(1.0 / dt));
+        last = now;
+#endif
+        
         [mQueueLock unlock];
         
         // NSLog(@"Got picture from camera!");
@@ -152,13 +156,24 @@
     }
 }
 
-- (id<MTLTexture>)dequeueTexture;
+- (nullable id<MTLTexture>)dequeueTexture;
 {
+    static CFTimeInterval last = 0.0;
+    
     id<MTLTexture> ret = nil;
     
     [mQueueLock lock];
+    
     if ([mTextures count] > 0)
         ret = [mTextures dequeue];
+    
+#if 0
+    CFTimeInterval now = CACurrentMediaTime();
+    float dt = now - last;
+    printf("Camera being consumed at %f FPS\n", (float)(1.0 / dt));
+    last = now;
+#endif
+    
     [mQueueLock unlock];
     
     return ret;

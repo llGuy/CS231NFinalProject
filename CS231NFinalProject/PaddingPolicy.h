@@ -10,14 +10,14 @@
 
 #import <MetalPerformanceShaders/MetalPerformanceShaders.h>
 
-@interface Pool6PaddingPolicy : NSObject <MPSNNPadding>
+@interface Pool6PaddingPolicy : NSObject <MPSNNPadding, NSSecureCoding>
 
 - (nonnull instancetype)init;
 - (MPSNNPaddingMethod)paddingMethod;
-- (MPSImageDescriptor *)destinationImageDescriptorForSourceImages:(NSArray<MPSImage *> *)sourceImages
-                                                     sourceStates:(NSArray<MPSState *> *)sourceStates
-                                                        forKernel:(MPSKernel *)kernel
-                                              suggestedDescriptor:(MPSImageDescriptor *)inDescriptor;
+- (MPSImageDescriptor *)destinationImageDescriptorForSourceImages:(nonnull NSArray<MPSImage *> *)sourceImages
+                                                     sourceStates:(nonnull NSArray<MPSState *> *)sourceStates
+                                                        forKernel:(nonnull MPSKernel *)kernel
+                                              suggestedDescriptor:(nonnull MPSImageDescriptor *)inDescriptor;
 
 @end
 

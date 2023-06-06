@@ -12,6 +12,7 @@
 #import "PaddingPolicy.h"
 #import "math.h"
 #import <Accelerate/Accelerate.h>
+#import <MetalKit/MetalKit.h>
 
 #include <vector>
 #include <algorithm>
@@ -186,10 +187,24 @@ end:
     float mAnchors[10];
     const char *mLabels[20];
     float mKeepThreshold;
+    
+    id<MTLTexture> mDebugTexture;
 }
 
 - (void)createGraph:(id<MTLDevice>)device
 {
+    NSError *error = nil;
+    
+    // Load the texture file
+    MTKTextureLoader *loader = [[MTKTextureLoader alloc] initWithDevice: device];
+    
+    NSString* path = [[NSBundle mainBundle] pathForResource:@"dog416" ofType:@"png" inDirectory:@""];
+    NSURL *url = [NSURL fileURLWithPath:path];
+    mDebugTexture = [loader newTextureWithContentsOfURL:url options:nil error:&error];
+    
+    if (error)
+        NSLog(@"%@", error.description);
+    
     mBlockSize = 32;
     mGridHeight = 13;
     mGridWidth = 13;
@@ -212,33 +227,42 @@ end:
     
     // Some preprocessing.
     MPSNNImageNode *inputImageNode = [[MPSNNImageNode alloc] initWithHandle:nil];
-    MPSNNLanczosScaleNode *scaleNode = [[MPSNNLanczosScaleNode alloc] initWithSource:inputImageNode outputSize:MTLSizeMake(mInputWidth, mInputHeight, 1)];
+    MPSNNLanczosScaleNode *scaleNode = [[MPSNNLanczosScaleNode alloc] initWithSource:inputImageNode outputSize:MTLSizeMake(mInputWidth, mInputHeight, 3)];
     
     // Convolutions.
     MPSCNNConvolutionNode *convNode1 = [[MPSCNNConvolutionNode alloc] initWithSource:scaleNode.resultImage weights:[[NetParams alloc] init:@"conv1" kernelSize:3 inputFeatureChannels:3 outputFeatureChannels:16]];
+    convNode1.accumulatorPrecision = MPSNNConvolutionAccumulatorPrecisionOptionHalf;
     MPSCNNPoolingMaxNode *poolNode1 = [[MPSCNNPoolingMaxNode alloc] initWithSource:convNode1.resultImage filterSize:2];
     
     MPSCNNConvolutionNode *convNode2 = [[MPSCNNConvolutionNode alloc] initWithSource:poolNode1.resultImage weights:[[NetParams alloc] init:@"conv2" kernelSize:3 inputFeatureChannels:16 outputFeatureChannels:32]];
+    convNode2.accumulatorPrecision = MPSNNConvolutionAccumulatorPrecisionOptionHalf;
     MPSCNNPoolingMaxNode *poolNode2 = [[MPSCNNPoolingMaxNode alloc] initWithSource:convNode2.resultImage filterSize:2];
     
     MPSCNNConvolutionNode *convNode3 = [[MPSCNNConvolutionNode alloc] initWithSource:poolNode2.resultImage weights:[[NetParams alloc] init:@"conv3" kernelSize:3 inputFeatureChannels:32 outputFeatureChannels:64]];
+    convNode3.accumulatorPrecision = MPSNNConvolutionAccumulatorPrecisionOptionHalf;
     MPSCNNPoolingMaxNode *poolNode3 = [[MPSCNNPoolingMaxNode alloc] initWithSource:convNode3.resultImage filterSize:2];
     
     MPSCNNConvolutionNode *convNode4 = [[MPSCNNConvolutionNode alloc] initWithSource:poolNode3.resultImage weights:[[NetParams alloc] init:@"conv4" kernelSize:3 inputFeatureChannels:64 outputFeatureChannels:128]];
+    convNode4.accumulatorPrecision = MPSNNConvolutionAccumulatorPrecisionOptionHalf;
     MPSCNNPoolingMaxNode *poolNode4 = [[MPSCNNPoolingMaxNode alloc] initWithSource:convNode4.resultImage filterSize:2];
     
     MPSCNNConvolutionNode *convNode5 = [[MPSCNNConvolutionNode alloc] initWithSource:poolNode4.resultImage weights:[[NetParams alloc] init:@"conv5" kernelSize:3 inputFeatureChannels:128 outputFeatureChannels:256]];
+    convNode5.accumulatorPrecision = MPSNNConvolutionAccumulatorPrecisionOptionHalf;
     MPSCNNPoolingMaxNode *poolNode5 = [[MPSCNNPoolingMaxNode alloc] initWithSource:convNode5.resultImage filterSize:2];
     
     MPSCNNConvolutionNode *convNode6 = [[MPSCNNConvolutionNode alloc] initWithSource:poolNode5.resultImage weights:[[NetParams alloc] init:@"conv6" kernelSize:3 inputFeatureChannels:256 outputFeatureChannels:512]];
+    convNode6.accumulatorPrecision = MPSNNConvolutionAccumulatorPrecisionOptionHalf;
     MPSCNNPoolingMaxNode *poolNode6 = [[MPSCNNPoolingMaxNode alloc] initWithSource:convNode6.resultImage filterSize:2 stride:1];
     poolNode6.paddingPolicy = [[Pool6PaddingPolicy alloc] init];
     
     MPSCNNConvolutionNode *convNode7 = [[MPSCNNConvolutionNode alloc] initWithSource:poolNode6.resultImage weights:[[NetParams alloc] init:@"conv7" kernelSize:3 inputFeatureChannels:512 outputFeatureChannels:1024]];
+    convNode7.accumulatorPrecision = MPSNNConvolutionAccumulatorPrecisionOptionHalf;
     
     MPSCNNConvolutionNode *convNode8 = [[MPSCNNConvolutionNode alloc] initWithSource:convNode7.resultImage weights:[[NetParams alloc] init:@"conv8" kernelSize:3 inputFeatureChannels:1024 outputFeatureChannels:1024]];
+    convNode8.accumulatorPrecision = MPSNNConvolutionAccumulatorPrecisionOptionHalf;
     
     MPSCNNConvolutionNode *convNode9 = [[MPSCNNConvolutionNode alloc] initWithSource:convNode8.resultImage weights:[[NetParams alloc] initNoLeaky:@"conv9" kernelSize:1 inputFeatureChannels:1024 outputFeatureChannels:125]];
+    convNode9.accumulatorPrecision = MPSNNConvolutionAccumulatorPrecisionOptionHalf;
     
     NSArray *result = @[convNode9.resultImage];
     BOOL needed = true;
@@ -251,12 +275,20 @@ end:
 {
     void *buffer = malloc(sizeof(uint16_t) * 13 * 13 * 128);
     [inputImage readBytes:buffer dataLayout:MPSDataLayoutFeatureChannelsxHeightxWidth imageIndex:0];
+    
+    void *buffer0 = malloc(sizeof(uint16_t) * 13 * 13 * 4);
+    
+    MTLRegion region = MTLRegionMake3D(0, 0, 0, 13, 13, 1);
+    [inputImage.texture getBytes:buffer0 bytesPerRow:13*4*2 bytesPerImage:0 fromRegion:region mipmapLevel:0 slice:0];
+    
+    uint16_t *features0 = (uint16_t *)buffer0;
+    
     float16_t *features = (float16_t *) buffer;
     float tx, ty, tw, th, tc, x, y, w, h, confidence;
    
     std::vector<Prediction> predictions;
     
-    printf("%f\n", (float)features[0]);
+    // printf("%f vs %d\n", (float)features[0], (int)features0[0]);
     
     for (int cy = 0; cy < mGridHeight; cy++) {
         for (int cx = 0; cx < mGridWidth; cx++) {
@@ -271,8 +303,8 @@ end:
                 tc = (float)(features[floatOffset(channel + 4, cx, cy, mGridHeight, mGridWidth)]);
                 
                 // Location of bounding box in input image.
-                x = (float) cx + sigmoid(tx) * mBlockSize;
-                y = (float) cy + sigmoid(ty) * mBlockSize;
+                x = ((float) cx + sigmoid(tx)) * mBlockSize;
+                y = ((float) cy + sigmoid(ty)) * mBlockSize;
 
                 //
                 w = exp(tw) * mAnchors[2 * b] * mBlockSize;
@@ -356,17 +388,17 @@ end:
 #endif
     
     free(buffer);
+    free(buffer0);
 }
 
 -(nonnull MPSImage *)encodeGraph:(nonnull id<MTLTexture>)inputTexture commandBuffer:(id<MTLCommandBuffer>)cmdbuf
 {
-    MPSImage *mpsImage = [[MPSImage alloc] initWithTexture:inputTexture featureChannels:3];
+    // MPSImage *mpsImage = [[MPSImage alloc] initWithTexture:inputTexture featureChannels:3];
+    MPSImage *mpsImage = [[MPSImage alloc] initWithTexture:mDebugTexture featureChannels:3];
     
     NSArray *inputImages = @[ mpsImage ];
     
     MPSImage *result = [mNetGraph encodeToCommandBuffer:cmdbuf sourceImages:inputImages];
-    
-    // printf("%d %d %d %d\n", (int)result.numberOfImages, (int)result.width, (int)result.height, (int)result.featureChannels);
     
     return result;
 }

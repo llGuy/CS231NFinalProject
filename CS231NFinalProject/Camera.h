@@ -11,6 +11,12 @@
 #import <Metal/Metal.h>
 #import <AVKit/AVKit.h>
 
+struct CameraImage
+{
+    id<MTLTexture> image;
+    CFTimeInterval timeStamp;
+};
+
 @interface Camera : NSObject <AVCaptureVideoDataOutputSampleBufferDelegate>
 
 -(nonnull instancetype)initWithDevice:(nonnull id<MTLDevice>)device;

@@ -11,10 +11,14 @@
 
 @implementation Pool6PaddingPolicy
 
++ (BOOL)supportsSecureCoding
+{
+    return YES;
+}
+
 - (nonnull instancetype)init
 {
     self = [super init];
-    
     return self;
 }
 
@@ -45,6 +49,7 @@
 
 - (nullable instancetype)initWithCoder:(nonnull NSCoder *)coder
 {
+    self = [super init];
     return self;
 }
 

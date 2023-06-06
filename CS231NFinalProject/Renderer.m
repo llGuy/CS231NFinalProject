@@ -21,6 +21,8 @@
 #import "YOLONet.h"
 #import "FontRenderer.h"
 
+//#define DISABLE_COMPUTATION
+
 struct FrameData
 {
     struct FontRenderInfo textRender;
@@ -81,6 +83,8 @@ struct FrameData
     self = [super init];
     if (self)
     {
+        view.preferredFramesPerSecond = 120;
+        
         mDevice = view.device;
         
         for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
@@ -198,19 +202,21 @@ struct FrameData
 
 - (void)encodePredictionRender:(nonnull MTKView *)view encoder:(id<MTLRenderCommandEncoder>)renderEncoder
 {
-    struct Prediction predictions[20];
-    int predictionCount;
-    [mNet makeBoundingBoxes:mFrames[mCurrentFrame].netOutput predictions:predictions predictionCount:&predictionCount];
-    
     {
+        int xOffset = (int)(100.0f * sin(CACurrentMediaTime()));
+        
         // TEST BOUNDING BOX AND TEXT EXAMPLE
-        vector_int2 pxStart = simd_make_int2(mViewportSize.x-400, mViewportSize.y-700);
+        vector_int2 pxStart = simd_make_int2(mViewportSize.x - 400 + xOffset, mViewportSize.y - 700 + xOffset);
         [mFontRenderer pushBoxPixelCoords:&mFrames[mCurrentFrame].boxRender position:pxStart size:simd_make_int2(300, 300) color:simd_make_float4(0.0f, 1.0f, 0.0f, 1.0f) viewport:mViewportSize];
         
         vector_float2 ndcStart = simd_make_float2((float)pxStart.x / (float)mViewportSize.x, (float)pxStart.y / (float)mViewportSize.y);
         [mFontRenderer pushText:&mFrames[mCurrentFrame].textRender text:"Example Box" position:ndcStart viewport:mViewportSize];
     }
     
+#if !defined(DISABLE_COMPUTATION)
+    struct Prediction predictions[20];
+    int predictionCount;
+    [mNet makeBoundingBoxes:mFrames[mCurrentFrame].netOutput predictions:predictions predictionCount:&predictionCount];
     
     for (int i = 0; i < predictionCount; ++i)
     {
@@ -227,6 +233,7 @@ struct FrameData
         vector_float2 ndcStart = simd_make_float2((float)pxStart.x / (float)mViewportSize.x, (float)pxStart.y / (float)mViewportSize.y);
         [mFontRenderer pushText:&mFrames[mCurrentFrame].textRender text:[mNet getLabel:currentPrediction->classIndex] position:ndcStart viewport:mViewportSize];
     }
+#endif
 }
 
 - (void)encodeFinalRender:(nonnull MTKView *)view commandBuffer:(id<MTLCommandBuffer>)cmdbuf
@@ -301,7 +308,9 @@ struct FrameData
 {
     [self encodeCropAndRotate:cmdbuf];
     
+#if !defined(DISABLE_COMPUTATION)
     mFrames[mCurrentFrame].netOutput = [mNet encodeGraph:mFrames[mCurrentFrame].croppedCameraOutput commandBuffer:cmdbuf];
+#endif
 }
 
 - (void)calculateFramerate
@@ -321,19 +330,7 @@ struct FrameData
 {
     // Wait for a free slot in mFrames.
     dispatch_semaphore_wait(mInFlightSemaphores[mCurrentFrame], DISPATCH_TIME_FOREVER);
-    
-    { // Make sure stuff gets presented to the screen immediately
-        id<MTLCommandBuffer> commandBuffer = [mCommandQueue commandBuffer];
-        commandBuffer.label = @"FrameCommandBuffer";
-        
-        /* Render output from previous submission. */
-        [self encodeFinalRender:view commandBuffer:commandBuffer];
-        
-        [commandBuffer presentDrawable:view.currentDrawable];
-        
-        [commandBuffer commit];
-    }
-    
+   
     { // Commit a command buffer to start doing the image processing work immediately.
         id<MTLCommandBuffer> commandBuffer = [mCommandQueue commandBuffer];
         commandBuffer.label = @"ComputeCommandBuffer";
@@ -344,6 +341,10 @@ struct FrameData
          {
             dispatch_semaphore_signal(blockSema);
         }];
+        
+        /* Render output from previous submission. */
+        [self encodeFinalRender:view commandBuffer:commandBuffer];
+        [commandBuffer presentDrawable:view.currentDrawable];
         
         // Dequeue image from camera.
         id<MTLTexture> newImg = [mCamera dequeueTexture];

@@ -119,6 +119,8 @@
 
 - (nonnull void *)weights
 {
+    printf("%f\n", *(float *)mData.bytes);
+    
     return (void *)mData.bytes;
 }
 
