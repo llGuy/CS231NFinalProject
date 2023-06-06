@@ -160,6 +160,7 @@ renderBoxVertex(BoxVertexIn in [[stage_in]],
     BoxVertexOut out;
     
     out.clipPosition = float4(in.position.xy, 0.0, 1.0);
+    out.clipPosition.y *= -1.0f;
     
     out.color = in.color;
     

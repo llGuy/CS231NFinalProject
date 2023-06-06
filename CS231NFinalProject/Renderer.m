@@ -202,17 +202,6 @@ struct FrameData
 
 - (void)encodePredictionRender:(nonnull MTKView *)view encoder:(id<MTLRenderCommandEncoder>)renderEncoder
 {
-    {
-        int xOffset = (int)(100.0f * sin(CACurrentMediaTime()));
-        
-        // TEST BOUNDING BOX AND TEXT EXAMPLE
-        vector_int2 pxStart = simd_make_int2(mViewportSize.x - 400 + xOffset, mViewportSize.y - 700 + xOffset);
-        [mFontRenderer pushBoxPixelCoords:&mFrames[mCurrentFrame].boxRender position:pxStart size:simd_make_int2(300, 300) color:simd_make_float4(0.0f, 1.0f, 0.0f, 1.0f) viewport:mViewportSize];
-        
-        vector_float2 ndcStart = simd_make_float2((float)pxStart.x / (float)mViewportSize.x, (float)pxStart.y / (float)mViewportSize.y);
-        [mFontRenderer pushText:&mFrames[mCurrentFrame].textRender text:"Example Box" position:ndcStart viewport:mViewportSize];
-    }
-    
 #if !defined(DISABLE_COMPUTATION)
     struct Prediction predictions[20];
     int predictionCount;
@@ -231,6 +220,7 @@ struct FrameData
         [mFontRenderer pushBoxPixelCoords:&mFrames[mCurrentFrame].boxRender position:pxStart size:pxExtent color:simd_make_float4(1.0f, 0.0f, 0.0f, 1.0f) viewport:mViewportSize];
         
         vector_float2 ndcStart = simd_make_float2((float)pxStart.x / (float)mViewportSize.x, (float)pxStart.y / (float)mViewportSize.y);
+        ndcStart.y = 1.0f - ndcStart.y;
         [mFontRenderer pushText:&mFrames[mCurrentFrame].textRender text:[mNet getLabel:currentPrediction->classIndex] position:ndcStart viewport:mViewportSize];
     }
 #endif

@@ -75,11 +75,9 @@ static inline float sigmoid(float x)
     return 1.0 / (1.0 + exp(-x));
 }
 
-static inline int floatOffset(int channel, int x, int y, int gridHeight, int gridWidth)
+static inline int floatOffset(int channel, int x, int y, int gridHeight, int gridWidth, int channelCount)
 {
-    int slice = channel / 4;
-    int indexInSlice = channel - slice*4;
-    int offset = slice*gridHeight*gridWidth*4 + y*gridWidth*4 + x*4 + indexInSlice;
+    int offset = channelCount * gridWidth * y + channelCount * x + channel;
     
     return offset;
 }
@@ -222,8 +220,8 @@ end:
     
     const char *labels[] = {
         "aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", "cat",
-        "chair", "cow", "diningtable", "dog", "horse", "motorbike", "person",
-        "pottedplant", "sheep", "sofa", "train", "tvmonitor"
+        "chair", "cow", "table", "dog", "horse", "motorcycle", "person",
+        "pottedplant", "sheep", "sofa", "train", "screen"
     };
     memcpy(mLabels, labels, sizeof(labels));
     
@@ -279,21 +277,26 @@ end:
 -(void)makeBoundingBoxes:(nonnull MPSImage *)inputImage predictions:(struct Prediction *)dst predictionCount:(int *)count
 {
     void *buffer = malloc(sizeof(uint16_t) * 13 * 13 * 128);
-    [inputImage readBytes:buffer dataLayout:MPSDataLayoutFeatureChannelsxHeightxWidth imageIndex:0];
-    
-    void *buffer0 = malloc(sizeof(uint16_t) * 13 * 13 * 4);
-    
-    MTLRegion region = MTLRegionMake3D(0, 0, 0, 13, 13, 1);
-    [inputImage.texture getBytes:buffer0 bytesPerRow:13*4*2 bytesPerImage:0 fromRegion:region mipmapLevel:0 slice:0];
-    
-    uint16_t *features0 = (uint16_t *)buffer0;
+    [inputImage readBytes:buffer dataLayout:MPSDataLayoutHeightxWidthxFeatureChannels imageIndex:0];
     
     float16_t *features = (float16_t *) buffer;
     float tx, ty, tw, th, tc, x, y, w, h, confidence;
    
     std::vector<Prediction> predictions;
     
-    printf("%f vs %d\n", (float)features[0], (int)features0[0]);
+#if 0
+    int shit = 0;
+    
+    for (int cy = 0; cy < mGridHeight; cy++) {
+        for (int cx = 0; cx < mGridWidth; cx++) {
+            for (int c = 0; c < 125; ++c) {
+                printf("Channel = %d, X = %d, Y = %d : %f\n", c, cx, cy, features[floatOffset(c, cx, cy, mGridHeight, mGridWidth, 125)]);
+            }
+        }
+    }
+    
+    printf("#############################################################################################\n\n");
+#endif
     
     for (int cy = 0; cy < mGridHeight; cy++) {
         for (int cx = 0; cx < mGridWidth; cx++) {
@@ -301,11 +304,11 @@ end:
                 
                 // Operate on bounding boxes, determine which to keep.
                 int channel = b * (mNumClasses + 5);
-                tx = (float)(features[floatOffset(channel, cx, cy, mGridHeight, mGridWidth)]);
-                ty = (float)(features[floatOffset(channel + 1, cx, cy, mGridHeight, mGridWidth)]);
-                tw = (float)(features[floatOffset(channel + 2, cx, cy, mGridHeight, mGridWidth)]);
-                th = (float)(features[floatOffset(channel + 3, cx, cy, mGridHeight, mGridWidth)]);
-                tc = (float)(features[floatOffset(channel + 4, cx, cy, mGridHeight, mGridWidth)]);
+                tx = (float)(features[floatOffset(channel, cx, cy, mGridHeight, mGridWidth, 125)]);
+                ty = (float)(features[floatOffset(channel + 1, cx, cy, mGridHeight, mGridWidth, 125)]);
+                tw = (float)(features[floatOffset(channel + 2, cx, cy, mGridHeight, mGridWidth, 125)]);
+                th = (float)(features[floatOffset(channel + 3, cx, cy, mGridHeight, mGridWidth, 125)]);
+                tc = (float)(features[floatOffset(channel + 4, cx, cy, mGridHeight, mGridWidth, 125)]);
                 
                 // Location of bounding box in input image.
                 x = ((float) cx + sigmoid(tx)) * mBlockSize;
@@ -324,7 +327,7 @@ end:
                 
                 for (int i = 0; i < numClasses; ++i)
                 {
-                    classes[i] = (float)(features[floatOffset(channel + 5 + i, cx, cy, mGridHeight, mGridWidth)]);
+                    classes[i] = (float)(features[floatOffset(channel + 5 + i, cx, cy, mGridHeight, mGridWidth, 125)]);
                     
                     if (classes[i] != 0.0f)
                         allZero = false;
@@ -332,17 +335,6 @@ end:
                 
                 if (allZero)
                     continue;
-                
-#if 0
-                float copy[numClasses];
-                memcpy(copy, classes, sizeof(classes));
-                
-                if (cx == 0 && cy == 0 && b == 0)
-                {
-                    for (int i= 0 ; i < numClasses; ++i)
-                        printf("%f\n", copy[i]);
-                }
-#endif
                 
                 softmax(classes, numClasses);
                 
@@ -356,13 +348,6 @@ end:
                 
                 if (confidenceInClass > mKeepThreshold)
                 {
-#if 0
-                    if (x-w/2.0f < 0.0f)
-                    {
-                        printf("Bug\n");
-                    }
-#endif
-                    
                     Prediction prediction = {
                         detectedClass,
                         simd_make_int2((int)x - (int)w/2, (int)y - (int)h/2),
@@ -393,15 +378,12 @@ end:
 #endif
     
     free(buffer);
-    free(buffer0);
 }
 
 -(nonnull MPSImage *)encodeGraph:(nonnull id<MTLTexture>)inputTexture commandBuffer:(id<MTLCommandBuffer>)cmdbuf
 {
-    // MPSImage *mpsImage = [[MPSImage alloc] initWithTexture:inputTexture featureChannels:3];
-    MPSImage *mpsImage = [[MPSImage alloc] initWithTexture:mDebugTexture featureChannels:3];
-    
-    NSLog(@"%@", mDebugTexture.description);
+    MPSImage *mpsImage = [[MPSImage alloc] initWithTexture:inputTexture featureChannels:3];
+    // MPSImage *mpsImage = [[MPSImage alloc] initWithTexture:mDebugTexture featureChannels:3];
     
     NSArray *inputImages = @[ mpsImage ];
     
