@@ -1,6 +1,6 @@
 # Nezha iOS App
 
-This repository contains an iOS application that uses the Nezha framework for real-time object detection. Nezha is a low-level cross-platform GPU computation framework that efficiently synchronizes machine learning (ML) and graphics GPU workloads using render graphs, providing high throughput and seamless interfacing with Vulkan, Metal, and CUDA.
+This repository contains an iOS application that uses the Nezha framework for real-time object detection. Nezha is a low-level cross-platform GPU computation framework that efficiently synchronizes machine learning (ML) and graphics GPU workloads using render graphs, providing high throughput and seamless interfacing with Vulkan, Metal, and CUDA. This project was developed as a part of Stanford's [CS231N](https://cs231n.stanford.edu/) course. 
 
 ## Overview
 
